@@ -1,0 +1,14 @@
+version: 0.2
+phases:
+  install:
+    commands:
+      - git clone https://github.com/flutter/flutter.git -b stable --depth 1 $HOME/flutter
+      - export PATH="$HOME/flutter/bin:$PATH"
+      - flutter --version
+  build:
+    commands:
+      - flutter pub get
+      - flutter build apk --release
+artifacts:
+  files:
+    - build/app/outputs/flutter-apk/app-release.apk

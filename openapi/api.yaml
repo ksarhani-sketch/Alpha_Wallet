@@ -1,0 +1,52 @@
+openapi: 3.0.3
+info:
+  title: Codex Finance API
+  version: 0.1.0
+servers:
+  - url: https://{host}/v1
+    variables:
+      host:
+        default: api.example.com
+paths:
+  /accounts:
+    get:
+      summary: List accounts
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Create account
+      requestBody: { required: true }
+      responses:
+        '201': { description: Created }
+  /categories:
+    get:
+      summary: List categories
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Create category
+      responses:
+        '201': { description: Created }
+  /transactions:
+    get:
+      summary: List transactions
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Create transaction
+      responses:
+        '201': { description: Created }
+  /budgets:
+    get:
+      summary: List budgets
+      responses:
+        '200': { description: OK }
+    post:
+      summary: Create budget
+      responses:
+        '201': { description: Created }
+  /attachments/presign:
+    post:
+      summary: Get presigned upload URL
+      responses:
+        '200': { description: OK }

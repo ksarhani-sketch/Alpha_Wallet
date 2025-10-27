@@ -1,0 +1,1 @@
+{ "account": "111111111111", "region": "me-south-1", "branch": "release/main", "repo": {"owner":"YOUR_GH","name":"codex","oauthSecretArn":"/codex/github/token"}, "tags": {"project":"codex","env":"staging"} }

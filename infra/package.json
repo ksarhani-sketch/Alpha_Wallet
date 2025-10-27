@@ -1,0 +1,21 @@
+{
+  "name": "codex-infra",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "build": "tsc -b",
+    "synth": "cdk synth",
+    "deploy": "cdk deploy --all",
+    "diff": "cdk diff",
+    "test": "echo 'no infra tests yet'"
+  },
+  "dependencies": {
+    "aws-cdk-lib": "^2.153.0",
+    "constructs": "^10.3.0",
+    "source-map-support": "^0.5.21"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.2",
+    "esbuild": "^0.24.0"
+  }
+}

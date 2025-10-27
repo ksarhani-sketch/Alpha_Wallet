@@ -1,32 +1,35 @@
-# Alpha Wallet Prototype
+# Codex Monorepo
 
-This repository contains a lightweight, front-end prototype for **Alpha Wallet**, a finance management experience focused on high-level visibility into cash flow, spending, and budgets.
+## Prerequisites
 
-## Features
+* AWS Account + IAM user/role with CDK permissions
+* Store GitHub token in **Secrets Manager** at `/codex/github/token`
+* Node 20, pnpm, AWS CLI v2, CDK v2
 
-- **Financial Overview** &mdash; Summary cards highlight balance, income, spending, and savings trends.
-- **Budget Health** &mdash; Visualize monthly or annualized budgets with clear status indicators.
-- **Transactions Table** &mdash; Filter and search recent transactions by merchant or category.
-- **Quick Entry Form** &mdash; Add transactions on the fly to see how they impact your overview metrics.
-- **Theme Toggle** &mdash; Switch between light and dark themes to review the interface in different contexts.
-
-## Getting Started
-
-No build tooling is required. Open `index.html` in your preferred browser to explore the prototype.
-
-### Optional: Serve locally
-
-You can serve the prototype via a basic static file server. For example, with Python installed:
+## 1) Bootstrap & deploy dev
 
 ```bash
-python -m http.server 8000
+cd infra
+pnpm install
+cdk bootstrap aws://<ACCOUNT>/me-south-1
+ENV=dev pnpm deploy
 ```
 
-Then visit [http://localhost:8000](http://localhost:8000) in your browser.
+## 2) Set up CodePipeline
 
-## Next Steps
+* Commit to the branch defined in `infra/config/staging.json` (`release/main`).
+* Pipeline will run **Infra** then **Services** builds.
 
-- Connect the interface to live financial data sources.
-- Expand budgeting to support custom categories and alerts.
-- Layer in analytics (e.g., cashflow projections, investment tracking).
-- Integrate authentication to personalize data per account holder.
+## 3) Test API locally (optional)
+
+Use `sam local` or invoke deployed API URL from API Gateway console.
+
+## 4) Flutter quick test
+
+* Edit `apiBase` in `main.dart` to your API invoke URL.
+* `flutter run` on a device/simulator.
+
+## Notes
+
+* Cognito authorizer wiring is mocked as `demo-user` in handlers; add a Cognito Authorizer on API Gateway for real auth.
+* DynamoDB keys are simplified for the prototype. For production, add GSIs for byAccount/byCategory queries and write capacity alarms.
