@@ -1,9 +1,7 @@
 version: 0.2
-
 phases:
   install:
     commands:
-      - echo "Installing dependencies..."
       - apt-get update -y
       - apt-get install -y curl git unzip xz-utils libglu1-mesa
       - curl -LO https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.24.3-stable.tar.xz
@@ -11,12 +9,13 @@ phases:
       - export PATH="$PWD/flutter/bin:$PATH"
       - flutter --version
       - flutter config --enable-web
+      - cd clients/flutter
       - flutter pub get
   build:
     commands:
-      - echo "Building Flutter web release..."
+      - cd clients/flutter
       - flutter build web --release
 artifacts:
-  base-directory: build/web
+  base-directory: clients/flutter/build/web
   files:
     - '**/*'
