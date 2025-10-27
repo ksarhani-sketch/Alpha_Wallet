@@ -1,0 +1,17 @@
+version: 0.2
+phases:
+  install:
+    commands:
+      - apt-get update -y
+      - apt-get install -y curl git unzip xz-utils libglu1-mesa
+      - curl -LO https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.24.3-stable.tar.xz
+      - tar -xf flutter_linux_3.24.3-stable.tar.xz
+      - export PATH="$PWD/flutter/bin:$PATH"
+      - flutter --version
+      - flutter pub get
+  build:
+    commands:
+      - flutter test --coverage
+artifacts:
+  files:
+    - coverage/**/* 
