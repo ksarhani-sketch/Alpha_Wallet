@@ -1,4 +1,5 @@
 version: 0.2
+
 phases:
   install:
     commands:
@@ -9,13 +10,13 @@ phases:
       - export PATH="$PWD/flutter/bin:$PATH"
       - flutter --version
       - flutter config --enable-web
-      - cd clients/flutter
       - flutter pub get
   build:
     commands:
-      - cd clients/flutter
+      - echo "Building Flutter web release…"
       - flutter build web --release
+
 artifacts:
-  base-directory: clients/flutter/build/web
+  base-directory: build/web
   files:
     - '**/*'
