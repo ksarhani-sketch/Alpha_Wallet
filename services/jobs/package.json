@@ -1,0 +1,13 @@
+{
+  "name": "codex-jobs",
+  "private": true,
+  "type": "module",
+  "dependencies": {
+    "@aws-sdk/client-dynamodb": "^3.653.0",
+    "@aws-sdk/lib-dynamodb": "^3.653.0"
+  },
+  "devDependencies": {
+    "@types/aws-lambda": "^8.10.129",
+    "typescript": "^5.6.2"
+  }
+}

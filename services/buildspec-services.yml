@@ -1,0 +1,12 @@
+version: 0.2
+phases:
+  install:
+    commands:
+      - corepack enable
+      - corepack prepare pnpm@9.0.0 --activate
+  pre_build:
+    commands:
+      - pnpm install --frozen-lockfile
+  build:
+    commands:
+      - echo "Services build complete (lambdas are bundled by CDK NodejsFunction)."

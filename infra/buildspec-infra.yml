@@ -1,0 +1,16 @@
+version: 0.2
+phases:
+  install:
+    commands:
+      - corepack enable
+      - corepack prepare pnpm@9.0.0 --activate
+      - pnpm i -g aws-cdk
+  pre_build:
+    commands:
+      - pnpm install --frozen-lockfile
+      - cd infra
+      - pnpm build
+  build:
+    commands:
+      - ENV=${ENV:=staging} pnpm synth
+      - ENV=${ENV:=staging} pnpm cdk deploy --all --require-approval never
