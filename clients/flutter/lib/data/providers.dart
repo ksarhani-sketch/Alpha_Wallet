@@ -19,8 +19,8 @@ final primaryCurrencyProvider = Provider<String>((ref) {
 
 final totalBalanceProvider = Provider<double>((ref) {
   final state = ref.watch(financeControllerProvider);
-  return state.wallets.fold<double>(0, (sum, wallet) {
-    final rate = state.fxRates[wallet.currency] ?? 1;
+  return state.wallets.fold<double>(0.0, (sum, wallet) {
+    final rate = state.fxRates[wallet.currency] ?? 1.0; // keep it double
     return sum + wallet.balance / rate;
   });
 });
@@ -38,7 +38,8 @@ class BudgetInsight {
   final double progress;
   final Category? category;
 
-  double get remaining => max(budget.limit - spent, 0);
+  // max(...) returns num — force double
+  double get remaining => max(budget.limit - spent, 0.0).toDouble();
   bool get isAlert => progress >= budget.alertThreshold;
   bool get isExceeded => spent > budget.limit;
 }
@@ -55,11 +56,16 @@ final budgetInsightsProvider = Provider<List<BudgetInsight>>((ref) {
           if (!inPeriod) return false;
           if (budget.categoryId == null) return true;
           return tx.categoryId == budget.categoryId;
-        }).fold<double>(0, (sum, tx) => sum + tx.amount);
-        final progress = budget.limit == 0 ? 0 : min(spent / budget.limit, 2);
+        }).fold<double>(0.0, (sum, tx) => sum + tx.amount);
+
+        // min(...) returns num — make literals double and cast to double
+        final double progress =
+            budget.limit == 0.0 ? 0.0 : min(spent / budget.limit, 2.0).toDouble();
+
         final category = budget.categoryId == null
             ? null
             : state.categories.firstWhereOrNull((cat) => cat.id == budget.categoryId);
+
         return BudgetInsight(
           budget: budget,
           spent: spent,
@@ -81,7 +87,7 @@ final categoryBreakdownProvider = Provider<Map<Category, double>>((ref) {
   return {
     for (final entry in grouped.entries)
       state.categories.firstWhere((cat) => cat.id == entry.key):
-          entry.value.fold<double>(0, (sum, tx) => sum + tx.amount)
+          entry.value.fold<double>(0.0, (sum, tx) => sum + tx.amount)
   };
 });
 
