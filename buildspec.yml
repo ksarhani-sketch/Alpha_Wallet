@@ -6,9 +6,7 @@ env:
 phases:
   install:
     commands:
-      - echo "=== Install system dependencies ==="
-      - apt-get update -y
-      - apt-get install -y curl git unzip xz-utils libglu1-mesa
+      - set -euo pipefail
       - echo "=== Download Flutter SDK ==="
       - curl -LO https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.24.3-stable.tar.xz
       - tar -xf flutter_linux_3.24.3-stable.tar.xz
@@ -16,12 +14,14 @@ phases:
       - git config --global --add safe.directory "$PWD/flutter"
       - flutter --version
       - flutter config --enable-web
-      - echo "=== Install Flutter dependencies ==="
+      - echo "=== Ensure web platform exists + get deps ==="
+      - test -f clients/flutter/pubspec.yaml || { echo "ERROR: missing pubspec.yaml under clients/flutter"; exit 1; }
+      - test -f clients/flutter/web/index.html || (cd clients/flutter && flutter create --platforms=web .)
       - cd clients/flutter && flutter pub get && cd -
 
   build:
     commands:
-      - echo "=== Build flutter web ==="
+      - echo "=== Build Flutter web (release) ==="
       - cd clients/flutter && flutter build web --release && cd -
 
 artifacts:
