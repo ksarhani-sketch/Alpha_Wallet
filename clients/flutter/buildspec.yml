@@ -8,16 +8,20 @@ phases:
       - curl -LO https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.24.3-stable.tar.xz
       - tar -xf flutter_linux_3.24.3-stable.tar.xz
       - export PATH="$PWD/flutter/bin:$PATH"
+      # Silence "dubious ownership" warnings from Flutter's embedded git repo
+      - git config --global --add safe.directory "$PWD/flutter"
       - flutter --version
       - flutter config --enable-web
-      - cd clients/flutter
-      - flutter pub get
+      # Run pub get inside the app folder without changing global CWD
+      - (cd clients/flutter && flutter pub get)
+
   build:
     commands:
-      - cd clients/flutter
-      - flutter build web --release
+      # Build inside the app folder without assuming previous CWD
+      - (cd clients/flutter && flutter build web --release)
 
 artifacts:
+  # Artifact path relative to repo root
   base-directory: clients/flutter/build/web
   files:
     - '**/*'
