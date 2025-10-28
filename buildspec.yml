@@ -1,13 +1,12 @@
 version: 0.2
 
 env:
+  shell: bash
   variables:
     PROJECT_DIR: "clients/flutter"
     FLUTTER_CHANNEL: "stable"
-    FLUTTER_VERSION: "3.24.3"        # change if you want a different SDK version
-  shell: bash
+    FLUTTER_VERSION: "3.24.3"
 
-# Optional but useful: cache your pub deps between builds
 cache:
   paths:
     - /root/.pub-cache/**
@@ -16,28 +15,21 @@ phases:
   install:
     commands:
       - set -euo pipefail
-      - echo "=== Harden apt and update with retries ==="
-      - |
-        # comment out jammy-backports (often times out in CodeBuild) – safe to skip
-        sed -i '/jammy-backports/s/^/# /' /etc/apt/sources.list || true
-
-        # retry wrapper
-        retry() { n=0; until "$@"; do n=$((n+1)); [ $n -ge 5 ] && { echo "FAILED: $*"; exit 1; }; echo "retry $n: $*"; sleep $((5*n)); done; }
-
-        retry apt-get update -y
-        apt-get install -y curl git unzip xz-utils libglu1-mesa
-
+      - echo "=== Harden apt sources and update with retries ==="
+      - sed -i '/jammy-backports/s/^/# /' /etc/apt/sources.list || true
+      - n=0; until apt-get update -y; do n=$((n+1)); [ $n -ge 5 ] && { echo "apt-get update failed after $n tries"; exit 1; }; echo "retry $n: apt-get update"; sleep $((5*n)); done
+      - apt-get install -y curl git unzip xz-utils libglu1-mesa
       - echo "=== Fetch Flutter SDK ${FLUTTER_VERSION} (${FLUTTER_CHANNEL}) ==="
-      - curl -L -o flutter_linux_${FLUTTER_VERSION}-${FLUTTER_CHANNEL}.tar.xz "https://storage.googleapis.com/flutter_infra_release/releases/${FLUTTER_CHANNEL}/linux/flutter_linux_${FLUTTER_VERSION}-${FLUTTER_CHANNEL}.tar.xz"
-      - tar -xf flutter_linux_${FLUTTER_VERSION}-${FLUTTER_CHANNEL}.tar.xz
+      - curl -L -o "flutter_linux_${FLUTTER_VERSION}-${FLUTTER_CHANNEL}.tar.xz" "https://storage.googleapis.com/flutter_infra_release/releases/${FLUTTER_CHANNEL}/linux/flutter_linux_${FLUTTER_VERSION}-${FLUTTER_CHANNEL}.tar.xz"
+      - tar -xf "flutter_linux_${FLUTTER_VERSION}-${FLUTTER_CHANNEL}.tar.xz"
       - export PATH="$PWD/flutter/bin:$PATH"
       - git config --global --add safe.directory "$PWD/flutter"
-
-      - echo "=== Verify Flutter & enable web ==="
       - flutter --version
       - flutter config --enable-web
-
-      - echo "=== Resolve Dart/Flutter deps (in ${PROJECT_DIR}) ==="
+      - echo "=== Check project and ensure web platform exists ==="
+      - ls -la "${PROJECT_DIR}"
+      - test -f "${PROJECT_DIR}/pubspec.yaml" || { echo "ERROR: No pubspec.yaml in ${PROJECT_DIR}"; exit 1; }
+      - test -f "${PROJECT_DIR}/web/index.html" || (cd "${PROJECT_DIR}" && flutter create --platforms=web .)
       - (cd "${PROJECT_DIR}" && flutter pub get)
 
   build:
@@ -48,12 +40,11 @@ phases:
 
   post_build:
     commands:
-      - echo "=== Build finished; preparing artifacts ==="
+      - echo "=== Verify artifacts ==="
       - test -f "${PROJECT_DIR}/build/web/index.html" || { echo "ERROR: web build missing index.html"; exit 2; }
       - du -sh "${PROJECT_DIR}/build/web" || true
 
 artifacts:
-  # CodePipeline/CodeBuild will upload everything under this directory as the stage artifact
   base-directory: clients/flutter/build/web
   files:
     - '**/*'
