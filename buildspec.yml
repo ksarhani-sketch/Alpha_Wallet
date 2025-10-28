@@ -3,24 +3,37 @@ version: 0.2
 env:
   shell: bash
 
+# (Optional) cache pub deps between builds
+cache:
+  paths:
+    - /root/.pub-cache/**
+
 phases:
   install:
     commands:
-      - "echo Installing Flutter SDK"
+      - "set -euo pipefail"
+      - "echo Downloading Flutter SDK"
       - "curl -LO https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.24.3-stable.tar.xz"
       - "tar -xf flutter_linux_3.24.3-stable.tar.xz"
       - "export PATH=$PWD/flutter/bin:$PATH"
       - "git config --global --add safe.directory $PWD/flutter"
       - "flutter --version"
       - "flutter config --enable-web"
+      - "echo Checking project layout"
       - "test -f clients/flutter/pubspec.yaml || { echo 'ERROR: missing clients/flutter/pubspec.yaml'; exit 1; }"
       - "bash -lc 'test -f clients/flutter/web/index.html || (cd clients/flutter && flutter create --platforms=web .)'"
       - "bash -lc 'cd clients/flutter && flutter pub get'"
 
   build:
     commands:
-      - "echo Building Flutter Web (release)"
-      - "bash -lc 'cd clients/flutter && flutter build web --release'"
+      - "echo Building Flutter Web - release"
+      - "bash -lc 'cd clients/flutter && flutter build web --release --verbose'"
+
+  post_build:
+    commands:
+      - "echo Verifying artifact"
+      - "test -f clients/flutter/build/web/index.html || { echo 'ERROR: web build output missing'; exit 2; }"
+      - "du -sh clients/flutter/build/web || true"
 
 artifacts:
   base-directory: clients/flutter/build/web
