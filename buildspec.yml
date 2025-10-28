@@ -6,25 +6,23 @@ env:
 phases:
   install:
     commands:
-      - set -euo pipefail
-      - echo "=== Download Flutter SDK ==="
-      - curl -LO https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.24.3-stable.tar.xz
-      - tar -xf flutter_linux_3.24.3-stable.tar.xz
-      - export PATH="$PWD/flutter/bin:$PATH"
-      - git config --global --add safe.directory "$PWD/flutter"
-      - flutter --version
-      - flutter config --enable-web
-      - echo "=== Ensure web platform exists + get deps ==="
-      - test -f clients/flutter/pubspec.yaml || { echo "ERROR: missing pubspec.yaml under clients/flutter"; exit 1; }
-      - test -f clients/flutter/web/index.html || (cd clients/flutter && flutter create --platforms=web .)
-      - cd clients/flutter && flutter pub get && cd -
+      - "echo Installing Flutter SDK"
+      - "curl -LO https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.24.3-stable.tar.xz"
+      - "tar -xf flutter_linux_3.24.3-stable.tar.xz"
+      - "export PATH=$PWD/flutter/bin:$PATH"
+      - "git config --global --add safe.directory $PWD/flutter"
+      - "flutter --version"
+      - "flutter config --enable-web"
+      - "test -f clients/flutter/pubspec.yaml || { echo 'ERROR: missing clients/flutter/pubspec.yaml'; exit 1; }"
+      - "bash -lc 'test -f clients/flutter/web/index.html || (cd clients/flutter && flutter create --platforms=web .)'"
+      - "bash -lc 'cd clients/flutter && flutter pub get'"
 
   build:
     commands:
-      - echo "=== Build Flutter web (release) ==="
-      - cd clients/flutter && flutter build web --release && cd -
+      - "echo Building Flutter Web (release)"
+      - "bash -lc 'cd clients/flutter && flutter build web --release'"
 
 artifacts:
   base-directory: clients/flutter/build/web
   files:
-    - '**/*'
+    - "**/*"
