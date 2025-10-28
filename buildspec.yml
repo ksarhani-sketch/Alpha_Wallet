@@ -2,30 +2,58 @@ version: 0.2
 
 env:
   variables:
-    APP_DIR: clients/flutter   # <-- change if your app lives elsewhere
+    PROJECT_DIR: "clients/flutter"
+    FLUTTER_CHANNEL: "stable"
+    FLUTTER_VERSION: "3.24.3"        # change if you want a different SDK version
+  shell: bash
+
+# Optional but useful: cache your pub deps between builds
+cache:
+  paths:
+    - /root/.pub-cache/**
 
 phases:
   install:
     commands:
-      - apt-get update -y
-      - apt-get install -y curl git unzip xz-utils libglu1-mesa
-      - curl -LO https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.24.3-stable.tar.xz
-      - tar -xf flutter_linux_3.24.3-stable.tar.xz
+      - set -euo pipefail
+      - echo "=== Harden apt and update with retries ==="
+      - |
+        # comment out jammy-backports (often times out in CodeBuild) – safe to skip
+        sed -i '/jammy-backports/s/^/# /' /etc/apt/sources.list || true
+
+        # retry wrapper
+        retry() { n=0; until "$@"; do n=$((n+1)); [ $n -ge 5 ] && { echo "FAILED: $*"; exit 1; }; echo "retry $n: $*"; sleep $((5*n)); done; }
+
+        retry apt-get update -y
+        apt-get install -y curl git unzip xz-utils libglu1-mesa
+
+      - echo "=== Fetch Flutter SDK ${FLUTTER_VERSION} (${FLUTTER_CHANNEL}) ==="
+      - curl -L -o flutter_linux_${FLUTTER_VERSION}-${FLUTTER_CHANNEL}.tar.xz "https://storage.googleapis.com/flutter_infra_release/releases/${FLUTTER_CHANNEL}/linux/flutter_linux_${FLUTTER_VERSION}-${FLUTTER_CHANNEL}.tar.xz"
+      - tar -xf flutter_linux_${FLUTTER_VERSION}-${FLUTTER_CHANNEL}.tar.xz
       - export PATH="$PWD/flutter/bin:$PATH"
       - git config --global --add safe.directory "$PWD/flutter"
+
+      - echo "=== Verify Flutter & enable web ==="
       - flutter --version
       - flutter config --enable-web
-      - ls -la "$APP_DIR"
-      - test -f "$APP_DIR/pubspec.yaml" || (echo "ERROR: No pubspec.yaml in $APP_DIR" && exit 1)
-      # 👇 THIS is the missing piece — creates web/ (index.html, manifest, icons) if absent
-      - test -f "$APP_DIR/web/index.html" || (cd "$APP_DIR" && flutter create --platforms=web .)
-      - (cd "$APP_DIR" && flutter pub get)
+
+      - echo "=== Resolve Dart/Flutter deps (in ${PROJECT_DIR}) ==="
+      - (cd "${PROJECT_DIR}" && flutter pub get)
 
   build:
     commands:
-      - (cd "$APP_DIR" && flutter build web --release)
+      - set -euo pipefail
+      - echo "=== Build Flutter WEB (release) ==="
+      - (cd "${PROJECT_DIR}" && flutter build web --release --verbose)
+
+  post_build:
+    commands:
+      - echo "=== Build finished; preparing artifacts ==="
+      - test -f "${PROJECT_DIR}/build/web/index.html" || { echo "ERROR: web build missing index.html"; exit 2; }
+      - du -sh "${PROJECT_DIR}/build/web" || true
 
 artifacts:
-  base-directory: $APP_DIR/build/web
+  # CodePipeline/CodeBuild will upload everything under this directory as the stage artifact
+  base-directory: clients/flutter/build/web
   files:
     - '**/*'
