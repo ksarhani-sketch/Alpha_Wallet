@@ -1,17 +1,38 @@
 version: 0.2
+
+env:
+  variables:
+    FLUTTER_SDK_URL: https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.24.3-stable.tar.xz
+
 phases:
   install:
     commands:
+      - set -euo pipefail
+      - echo "=== Install base packages ==="
       - apt-get update -y
       - apt-get install -y curl git unzip xz-utils libglu1-mesa
-      - curl -LO https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.24.3-stable.tar.xz
-      - tar -xf flutter_linux_3.24.3-stable.tar.xz
+      - echo "=== Download & setup Flutter SDK ==="
+      - curl -L -o flutter.tar.xz "$FLUTTER_SDK_URL"
+      - tar -xf flutter.tar.xz
       - export PATH="$PWD/flutter/bin:$PATH"
+      # Fix: allow Flutter repo path for git in CodeBuild
+      - git config --global --add safe.directory "$PWD/flutter"
       - flutter --version
+      - flutter config --enable-web || true
+      - echo "=== Fetch project dependencies ==="
+      - cd clients/flutter
       - flutter pub get
+
   build:
     commands:
+      - set -euo pipefail
+      - echo "=== Run unit/widget tests ==="
+      # If your tests don't require a browser, keep it simple:
       - flutter test --coverage
+      # If you *do* have web tests and Chrome is available, use:
+      # flutter test --platform=chrome --headless --coverage
+
 artifacts:
   files:
-    - coverage/**/* 
+    - clients/flutter/coverage/**/*
+  discard-paths: no
