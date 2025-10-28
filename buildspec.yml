@@ -1,5 +1,9 @@
 version: 0.2
 
+env:
+  variables:
+    APP_DIR: clients/flutter   # <— change if your app lives elsewhere
+
 phases:
   install:
     commands:
@@ -8,20 +12,21 @@ phases:
       - curl -LO https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.24.3-stable.tar.xz
       - tar -xf flutter_linux_3.24.3-stable.tar.xz
       - export PATH="$PWD/flutter/bin:$PATH"
-      # Silence "dubious ownership" warnings from Flutter's embedded git repo
       - git config --global --add safe.directory "$PWD/flutter"
       - flutter --version
       - flutter config --enable-web
-      # Run pub get inside the app folder without changing global CWD
-      - (cd clients/flutter && flutter pub get)
+      # sanity checks + fetch deps
+      - ls -la "$APP_DIR"
+      - test -f "$APP_DIR/pubspec.yaml" || (echo "ERROR: No pubspec.yaml in $APP_DIR" && exit 1)
+      # If the web platform folder doesn't exist, create it (adds web/index.html etc.)
+      - test -f "$APP_DIR/web/index.html" || (cd "$APP_DIR" && flutter create --platforms=web .)
+      - (cd "$APP_DIR" && flutter pub get)
 
   build:
     commands:
-      # Build inside the app folder without assuming previous CWD
-      - (cd clients/flutter && flutter build web --release)
+      - (cd "$APP_DIR" && flutter build web --release)
 
 artifacts:
-  # Artifact path relative to repo root
-  base-directory: clients/flutter/build/web
+  base-directory: $APP_DIR/build/web
   files:
     - '**/*'
