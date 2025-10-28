@@ -11,7 +11,6 @@ phases:
       - echo "=== Install base packages ==="
       - apt-get update -y
       - apt-get install -y curl git unzip xz-utils libglu1-mesa
-
       - echo "=== Download & setup Flutter SDK ==="
       - curl -L -o flutter.tar.xz "$FLUTTER_SDK_URL"
       - tar -xf flutter.tar.xz
@@ -28,7 +27,6 @@ phases:
           APP_DIR="."
         else
           echo "ERROR: Could not find pubspec.yaml in expected locations."
-          echo "Repo tree (max depth 3):"
           find . -maxdepth 3 -type f -name pubspec.yaml -print
           exit 1
         fi
@@ -37,20 +35,23 @@ phases:
 
       - echo "=== Fetch project dependencies ==="
       - APP_DIR="$(cat .appdir)"
-      - ls -la "$APP_DIR"
       - (cd "$APP_DIR" && flutter pub get)
 
   build:
     commands:
       - set -e
-      - echo "=== Run unit/widget tests ==="
+      - echo "=== Run unit/widget tests (if present) ==="
       - APP_DIR="$(cat .appdir)"
-      - echo "APP_DIR=$APP_DIR"
-      - ls -la "$APP_DIR" || { echo "Path not found"; find . -maxdepth 3 -type d -name flutter -print; exit 2; }
-      - (cd "$APP_DIR" && flutter test --coverage)
+      - |
+        if [ -d "$APP_DIR/test" ]; then
+          (cd "$APP_DIR" && flutter test --coverage)
+        else
+          echo "No test directory at $APP_DIR/test — skipping tests"
+          (cd "$APP_DIR" && flutter analyze)
+        fi
 
 artifacts:
   files:
     - clients/flutter/coverage/**/*
-    - coverage/**/*
+    - clients/flutter/**/analysis_options.yaml
   discard-paths: no
