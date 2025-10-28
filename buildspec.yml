@@ -2,7 +2,7 @@ version: 0.2
 
 env:
   variables:
-    APP_DIR: clients/flutter   # <— change if your app lives elsewhere
+    APP_DIR: clients/flutter   # <-- change if your app lives elsewhere
 
 phases:
   install:
@@ -15,10 +15,9 @@ phases:
       - git config --global --add safe.directory "$PWD/flutter"
       - flutter --version
       - flutter config --enable-web
-      # sanity checks + fetch deps
       - ls -la "$APP_DIR"
       - test -f "$APP_DIR/pubspec.yaml" || (echo "ERROR: No pubspec.yaml in $APP_DIR" && exit 1)
-      # If the web platform folder doesn't exist, create it (adds web/index.html etc.)
+      # 👇 THIS is the missing piece — creates web/ (index.html, manifest, icons) if absent
       - test -f "$APP_DIR/web/index.html" || (cd "$APP_DIR" && flutter create --platforms=web .)
       - (cd "$APP_DIR" && flutter pub get)
 
