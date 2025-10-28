@@ -7,7 +7,7 @@ env:
 phases:
   install:
     commands:
-      - set -euo pipefail
+      - set -e
       - echo "=== Install base packages ==="
       - apt-get update -y
       - apt-get install -y curl git unzip xz-utils libglu1-mesa
@@ -15,9 +15,8 @@ phases:
       - curl -L -o flutter.tar.xz "$FLUTTER_SDK_URL"
       - tar -xf flutter.tar.xz
       - export PATH="$PWD/flutter/bin:$PATH"
-      # Fix: allow Flutter repo path for git in CodeBuild
       - git config --global --add safe.directory "$PWD/flutter"
-      - flutter --version
+      - flutter --version || true
       - flutter config --enable-web || true
       - echo "=== Fetch project dependencies ==="
       - cd clients/flutter
@@ -25,12 +24,14 @@ phases:
 
   build:
     commands:
-      - set -euo pipefail
+      - set -e
       - echo "=== Run unit/widget tests ==="
-      # If your tests don't require a browser, keep it simple:
+      - cd clients/flutter
       - flutter test --coverage
-      # If you *do* have web tests and Chrome is available, use:
-      # flutter test --platform=chrome --headless --coverage
+      # For web tests with a headless browser, optionally:
+      # - apt-get install -y chromium-browser || apt-get install -y chromium || true
+      # - CHROME_EXECUTABLE=$(command -v chromium-browser || command -v chromium || echo "")
+      # - if [ -n "$CHROME_EXECUTABLE" ]; then flutter test --platform=chrome --headless --coverage; fi
 
 artifacts:
   files:
