@@ -1,31 +1,41 @@
 version: 0.2
 
 env:
-  variables:
-    APP_DIR: clients/flutter   # <-- change if your app lives elsewhere
+  shell: bash
+
+# (Optional) cache pub deps between builds
+cache:
+  paths:
+    - /root/.pub-cache/**
 
 phases:
   install:
     commands:
-      - apt-get update -y
-      - apt-get install -y curl git unzip xz-utils libglu1-mesa
-      - curl -LO https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.24.3-stable.tar.xz
-      - tar -xf flutter_linux_3.24.3-stable.tar.xz
-      - export PATH="$PWD/flutter/bin:$PATH"
-      - git config --global --add safe.directory "$PWD/flutter"
-      - flutter --version
-      - flutter config --enable-web
-      - ls -la "$APP_DIR"
-      - test -f "$APP_DIR/pubspec.yaml" || (echo "ERROR: No pubspec.yaml in $APP_DIR" && exit 1)
-      # 👇 THIS is the missing piece — creates web/ (index.html, manifest, icons) if absent
-      - test -f "$APP_DIR/web/index.html" || (cd "$APP_DIR" && flutter create --platforms=web .)
-      - (cd "$APP_DIR" && flutter pub get)
+      - "set -euo pipefail"
+      - "echo Downloading Flutter SDK"
+      - "curl -LO https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.24.3-stable.tar.xz"
+      - "tar -xf flutter_linux_3.24.3-stable.tar.xz"
+      - "export PATH=$PWD/flutter/bin:$PATH"
+      - "git config --global --add safe.directory $PWD/flutter"
+      - "flutter --version"
+      - "flutter config --enable-web"
+      - "echo Checking project layout"
+      - "test -f clients/flutter/pubspec.yaml || { echo 'ERROR: missing clients/flutter/pubspec.yaml'; exit 1; }"
+      - "bash -lc 'test -f clients/flutter/web/index.html || (cd clients/flutter && flutter create --platforms=web .)'"
+      - "bash -lc 'cd clients/flutter && flutter pub get'"
 
   build:
     commands:
-      - (cd "$APP_DIR" && flutter build web --release)
+      - "echo Building Flutter Web - release"
+      - "bash -lc 'cd clients/flutter && flutter build web --release --verbose'"
+
+  post_build:
+    commands:
+      - "echo Verifying artifact"
+      - "test -f clients/flutter/build/web/index.html || { echo 'ERROR: web build output missing'; exit 2; }"
+      - "du -sh clients/flutter/build/web || true"
 
 artifacts:
-  base-directory: $APP_DIR/build/web
+  base-directory: clients/flutter/build/web
   files:
-    - '**/*'
+    - "**/*"

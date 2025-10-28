@@ -1,17 +1,56 @@
 version: 0.2
+
+env:
+  variables:
+    FLUTTER_SDK_URL: https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.24.3-stable.tar.xz
+
 phases:
   install:
     commands:
+      - set -e
+      - echo "=== Install base packages ==="
       - apt-get update -y
       - apt-get install -y curl git unzip xz-utils libglu1-mesa
-      - curl -LO https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.24.3-stable.tar.xz
-      - tar -xf flutter_linux_3.24.3-stable.tar.xz
+
+      - echo "=== Download & setup Flutter SDK ==="
+      - curl -L -o flutter.tar.xz "$FLUTTER_SDK_URL"
+      - tar -xf flutter.tar.xz
       - export PATH="$PWD/flutter/bin:$PATH"
-      - flutter --version
-      - flutter pub get
+      - git config --global --add safe.directory "$PWD/flutter"
+      - flutter --version || true
+      - flutter config --enable-web || true
+
+      - echo "=== Locate Flutter app directory ==="
+      - |
+        if [ -f clients/flutter/pubspec.yaml ]; then
+          APP_DIR="clients/flutter"
+        elif [ -f pubspec.yaml ]; then
+          APP_DIR="."
+        else
+          echo "ERROR: Could not find pubspec.yaml in expected locations."
+          echo "Repo tree (max depth 3):"
+          find . -maxdepth 3 -type f -name pubspec.yaml -print
+          exit 1
+        fi
+        echo "$APP_DIR" > .appdir
+        echo "Using APP_DIR=$APP_DIR"
+
+      - echo "=== Fetch project dependencies ==="
+      - APP_DIR="$(cat .appdir)"
+      - ls -la "$APP_DIR"
+      - (cd "$APP_DIR" && flutter pub get)
+
   build:
     commands:
-      - flutter test --coverage
+      - set -e
+      - echo "=== Run unit/widget tests ==="
+      - APP_DIR="$(cat .appdir)"
+      - echo "APP_DIR=$APP_DIR"
+      - ls -la "$APP_DIR" || { echo "Path not found"; find . -maxdepth 3 -type d -name flutter -print; exit 2; }
+      - (cd "$APP_DIR" && flutter test --coverage)
+
 artifacts:
   files:
-    - coverage/**/* 
+    - clients/flutter/coverage/**/*
+    - coverage/**/*
+  discard-paths: no
