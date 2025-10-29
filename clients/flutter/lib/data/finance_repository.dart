@@ -16,7 +16,7 @@ class FinanceController extends StateNotifier<FinanceState> {
       : _api = apiClient ?? FinanceApiClient(),
         _uuid = const Uuid(),
         super(_initialState(apiClient ?? FinanceApiClient())) {
-    if (_api.isEnabled) {
+    if (_api.isEnabled && _api.hasAuthProvider) {
       _bootstrap();
     }
   }
@@ -25,7 +25,7 @@ class FinanceController extends StateNotifier<FinanceState> {
   final Uuid _uuid;
 
   static FinanceState _initialState(FinanceApiClient api) {
-    if (api.isEnabled) {
+    if (api.isEnabled && api.hasAuthProvider) {
       return FinanceState(
         categories: const [],
         wallets: const [],
@@ -235,6 +235,10 @@ class FinanceController extends StateNotifier<FinanceState> {
   Future<void> syncNow() async {
     if (state.isSyncing) return;
     if (_api.isEnabled) {
+      if (!_api.hasAuthProvider) {
+        state = state.copyWith(isSyncing: false);
+        return;
+      }
       await _refreshFromRemote();
       return;
     }

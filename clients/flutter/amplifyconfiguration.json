@@ -1,0 +1,30 @@
+{
+  "auth": {
+    "plugins": {
+      "awsCognitoAuthPlugin": {
+        "UserAgent": "aws-amplify-cli/2.0",
+        "Version": "1.0",
+        "config": {
+          "userPool": {
+            "Default": {
+              "PoolId": "REPLACE_WITH_USER_POOL_ID",
+              "AppClientId": "REPLACE_WITH_USER_POOL_CLIENT_ID",
+              "Region": "REPLACE_WITH_AWS_REGION"
+            }
+          },
+          "oauth": {
+            "WebDomain": "REPLACE_WITH_COGNITO_DOMAIN",
+            "AppClientId": "REPLACE_WITH_USER_POOL_CLIENT_ID",
+            "SignInRedirectURI": "alphawallet://auth/",
+            "SignOutRedirectURI": "alphawallet://signout/",
+            "Scopes": [
+              "email",
+              "openid",
+              "profile"
+            ]
+          }
+        }
+      }
+    }
+  }
+}
