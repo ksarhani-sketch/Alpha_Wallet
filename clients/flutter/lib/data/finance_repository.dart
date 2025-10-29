@@ -1,19 +1,76 @@
+import 'dart:async';
 import 'dart:math';
 
 import 'package:collection/collection.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import 'finance_state.dart';
 import 'models/models.dart';
+import 'remote/finance_api_client.dart';
 import 'sample_data.dart';
 
 class FinanceController extends StateNotifier<FinanceState> {
-  FinanceController() : super(buildSampleState());
+  FinanceController({FinanceApiClient? apiClient})
+      : _api = apiClient ?? FinanceApiClient(),
+        _uuid = const Uuid(),
+        super(_initialState(apiClient ?? FinanceApiClient())) {
+    if (_api.isEnabled) {
+      _bootstrap();
+    }
+  }
 
-  final _uuid = const Uuid();
+  final FinanceApiClient _api;
+  final Uuid _uuid;
 
-  void addTransaction({
+  static FinanceState _initialState(FinanceApiClient api) {
+    if (api.isEnabled) {
+      return FinanceState(
+        categories: const [],
+        wallets: const [],
+        transactions: const [],
+        budgets: const [],
+        recurringTemplates: const [],
+        settings: const UserSettings(
+          userId: 'remote-user',
+          primaryCurrency: 'USD',
+          locale: 'en',
+        ),
+        fxRates: const {'USD': 1.0},
+        lastSyncedAt: DateTime.fromMillisecondsSinceEpoch(0),
+        isSyncing: true,
+      );
+    }
+    return buildSampleState();
+  }
+
+  Future<void> _bootstrap() async {
+    try {
+      await _refreshFromRemote();
+    } catch (_) {
+      // keep optimistic state; errors will surface on explicit sync actions
+    }
+  }
+
+  Future<void> _refreshFromRemote() async {
+    if (!_api.isEnabled) return;
+    state = state.copyWith(isSyncing: true);
+    try {
+      final remoteState = await _api.fetchState();
+      state = remoteState;
+    } on FinanceApiException catch (error, stackTrace) {
+      debugPrint('FinanceController: failed to sync (${error.statusCode}) ${error.message}\n$stackTrace');
+      state = state.copyWith(isSyncing: false);
+      rethrow;
+    } catch (error, stackTrace) {
+      debugPrint('FinanceController: unexpected sync error $error\n$stackTrace');
+      state = state.copyWith(isSyncing: false);
+      rethrow;
+    }
+  }
+
+  Future<void> addTransaction({
     required double amount,
     required String walletId,
     required String categoryId,
@@ -22,10 +79,29 @@ class FinanceController extends StateNotifier<FinanceState> {
     String? merchant,
     String? locationDescription,
     double? fxRate,
-  }) {
+  }) async {
     if (amount <= 0) {
       throw ArgumentError.value(amount, 'amount', 'Amount must be positive');
     }
+
+    if (_api.isEnabled) {
+      final category = state.categories.firstWhereOrNull((c) => c.id == categoryId);
+      if (category == null) {
+        throw StateError('Category $categoryId not found');
+      }
+      final type = category.type == CategoryType.income ? 'income' : 'expense';
+      await _api.createTransaction(
+        accountId: walletId,
+        categoryId: categoryId,
+        type: type,
+        amount: amount,
+        note: note,
+        tags: tags,
+      );
+      await _refreshFromRemote();
+      return;
+    }
+
     final wallet = state.wallets.firstWhere((w) => w.id == walletId);
     final category = state.categories.firstWhere((c) => c.id == categoryId);
     final kind = switch (category.type) {
@@ -80,6 +156,9 @@ class FinanceController extends StateNotifier<FinanceState> {
     required double amount,
     String? note,
   }) {
+    if (_api.isEnabled) {
+      throw UnsupportedError('Transfers are not yet supported in remote mode.');
+    }
     if (amount <= 0) return;
     final source = state.wallets.firstWhereOrNull((w) => w.id == sourceWalletId);
     final destination =
@@ -125,7 +204,12 @@ class FinanceController extends StateNotifier<FinanceState> {
     );
   }
 
-  void deleteTransaction(String transactionId) {
+  Future<void> deleteTransaction(String transactionId) async {
+    if (_api.isEnabled) {
+      await _api.deleteTransaction(transactionId);
+      await _refreshFromRemote();
+      return;
+    }
     final transaction =
         state.transactions.firstWhereOrNull((tx) => tx.id == transactionId);
     if (transaction == null) return;
@@ -150,6 +234,10 @@ class FinanceController extends StateNotifier<FinanceState> {
 
   Future<void> syncNow() async {
     if (state.isSyncing) return;
+    if (_api.isEnabled) {
+      await _refreshFromRemote();
+      return;
+    }
     state = state.copyWith(isSyncing: true);
     await Future<void>.delayed(const Duration(milliseconds: 900));
     state = state.copyWith(
