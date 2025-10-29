@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../core/formatters.dart';
 import '../../core/theme.dart';
+import '../../data/auth/auth_state.dart';
+import '../../data/auth/providers.dart';
 import '../../data/providers.dart';
 
 class SettingsScreen extends ConsumerWidget {
@@ -11,6 +13,7 @@ class SettingsScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final state = ref.watch(financeControllerProvider);
+    final authState = ref.watch(authControllerProvider);
     final themeMode = ref.watch(themeModeProvider);
     final controller = ref.read(financeControllerProvider.notifier);
 
@@ -21,10 +24,21 @@ class SettingsScreen extends ConsumerWidget {
           child: ListTile(
             leading: const Icon(Icons.person_outline),
             title: const Text('Account'),
-            subtitle: Text('Primary currency ${state.settings.primaryCurrency}\nLocale ${state.settings.locale}'),
-            trailing: state.settings.premium
-                ? const Chip(label: Text('Premium'))
-                : const Chip(label: Text('Free')),
+            subtitle: Text(
+              [
+                if (authState.status == AuthStatus.signedIn)
+                  'Signed in as ${authState.username ?? 'Cognito user'}',
+                'Primary currency ${state.settings.primaryCurrency}',
+                'Locale ${state.settings.locale}',
+              ].join('\n'),
+            ),
+            trailing: authState.status == AuthStatus.signedIn
+                ? TextButton.icon(
+                    onPressed: () => ref.read(authControllerProvider.notifier).signOut(),
+                    icon: const Icon(Icons.logout),
+                    label: const Text('Sign out'),
+                  )
+                : const Chip(label: Text('Offline mode')),
           ),
         ),
         const SizedBox(height: 16),

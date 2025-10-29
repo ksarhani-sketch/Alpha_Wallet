@@ -36,6 +36,7 @@ class FinanceApiClient {
   final Future<String?> Function()? tokenProvider;
 
   bool get isEnabled => _baseUri != null;
+  bool get hasAuthProvider => tokenProvider != null;
 
   void close() {
     _client.close();

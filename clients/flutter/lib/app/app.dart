@@ -3,6 +3,7 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../core/theme.dart';
+import '../features/auth/auth_gate.dart';
 import '../data/providers.dart';
 import '../features/budgets/budgets_screen.dart';
 import '../features/dashboard/dashboard_screen.dart';
@@ -28,7 +29,7 @@ class AlphaWalletApp extends ConsumerWidget {
         GlobalWidgetsLocalizations.delegate,
       ],
       supportedLocales: const [Locale('en'), Locale('ar')],
-      home: const HomeShell(),
+      home: const AuthGate(child: HomeShell()),
     );
   }
 }
