@@ -6,11 +6,19 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'finance_repository.dart';
 import 'finance_state.dart';
 import 'models/models.dart';
+import 'remote/finance_api_client.dart';
+
+final financeApiClientProvider = Provider<FinanceApiClient>((ref) {
+  final client = FinanceApiClient();
+  ref.onDispose(client.close);
+  return client;
+});
 
 final financeControllerProvider =
-    StateNotifierProvider<FinanceController, FinanceState>(
-  (ref) => FinanceController(),
-);
+    StateNotifierProvider<FinanceController, FinanceState>((ref) {
+  final apiClient = ref.watch(financeApiClientProvider);
+  return FinanceController(apiClient: apiClient);
+});
 
 final primaryCurrencyProvider = Provider<String>((ref) {
   final state = ref.watch(financeControllerProvider);

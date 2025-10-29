@@ -172,7 +172,18 @@ class _TransactionsScreenState extends ConsumerState<TransactionsScreen> {
       ),
     );
     if (shouldDelete == true) {
-      controller.deleteTransaction(id);
+      try {
+        await controller.deleteTransaction(id);
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Transaction deleted.')),
+        );
+      } on Exception catch (error) {
+        if (!mounted) return;
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to delete transaction: $error')),
+        );
+      }
     }
   }
 }

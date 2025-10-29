@@ -192,21 +192,29 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
     if (_includeLocation) {
       tags.add('location');
     }
-    controller.addTransaction(
-      amount: amount,
-      walletId: _walletId!,
-      categoryId: _categoryId!,
-      note: _noteController.text.isEmpty ? null : _noteController.text,
-      tags: tags,
-      merchant: _noteController.text,
-      locationDescription: _includeLocation ? 'Current location' : null,
-    );
-    setState(() => _isSubmitting = false);
-    if (mounted) {
+    try {
+      await controller.addTransaction(
+        amount: amount,
+        walletId: _walletId!,
+        categoryId: _categoryId!,
+        note: _noteController.text.isEmpty ? null : _noteController.text,
+        tags: tags,
+        merchant: _noteController.text,
+        locationDescription: _includeLocation ? 'Current location' : null,
+      );
+      if (!mounted) return;
       Navigator.of(context).pop();
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Transaction saved and ready to sync.')),
+        const SnackBar(content: Text('Transaction saved.')),
       );
+    } on Exception catch (error) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to save transaction: $error')),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _isSubmitting = false);
+      }
     }
   }
 }
