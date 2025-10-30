@@ -7,7 +7,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
 import 'finance_state.dart';
-import 'models/models.dart';
+// ✅ Alias your domain models to avoid name clash with flutter/foundation.
+import 'models/models.dart' as m;
 import 'remote/finance_api_client.dart';
 import 'sample_data.dart';
 
@@ -32,7 +33,7 @@ class FinanceController extends StateNotifier<FinanceState> {
         transactions: const [],
         budgets: const [],
         recurringTemplates: const [],
-        settings: const UserSettings(
+        settings: const m.UserSettings(
           userId: 'remote-user',
           primaryCurrency: 'USD',
           locale: 'en',
@@ -89,7 +90,7 @@ class FinanceController extends StateNotifier<FinanceState> {
       if (category == null) {
         throw StateError('Category $categoryId not found');
       }
-      final type = category.type == CategoryType.income ? 'income' : 'expense';
+      final type = category.type == m.CategoryType.income ? 'income' : 'expense';
       await _api.createTransaction(
         accountId: walletId,
         categoryId: categoryId,
@@ -105,14 +106,14 @@ class FinanceController extends StateNotifier<FinanceState> {
     final wallet = state.wallets.firstWhere((w) => w.id == walletId);
     final category = state.categories.firstWhere((c) => c.id == categoryId);
     final kind = switch (category.type) {
-      CategoryType.expense => TransactionKind.expense,
-      CategoryType.income => TransactionKind.income,
+      m.CategoryType.expense => m.TransactionKind.expense,
+      m.CategoryType.income => m.TransactionKind.income,
     };
 
     final rate = fxRate ?? state.fxRates[wallet.currency] ?? 1;
     final normalizedAmount = amount;
 
-    final transaction = TransactionRecord(
+    final transaction = m.TransactionRecord(
       id: _uuid.v4(),
       walletId: walletId,
       amount: double.parse(amount.toStringAsFixed(2)),
@@ -134,12 +135,12 @@ class FinanceController extends StateNotifier<FinanceState> {
       for (final w in state.wallets)
         if (w.id == walletId)
           w.copyWith(
-              balance: _applyAmountToBalance(
-                balance: w.balance,
-                amount: normalizedAmount,
-                kind: kind,
-              ),
-            )
+            balance: _applyAmountToBalance(
+              balance: w.balance,
+              amount: normalizedAmount,
+              kind: kind,
+            ),
+          )
         else
           w,
     ];
@@ -165,13 +166,13 @@ class FinanceController extends StateNotifier<FinanceState> {
         state.wallets.firstWhereOrNull((w) => w.id == destinationWalletId);
     if (source == null || destination == null) return;
 
-    final transactionOut = TransactionRecord(
+    final transactionOut = m.TransactionRecord(
       id: _uuid.v4(),
       walletId: sourceWalletId,
       amount: double.parse(amount.toStringAsFixed(2)),
       currency: source.currency,
       categoryId: 'transfer-out',
-      kind: TransactionKind.transfer,
+      kind: m.TransactionKind.transfer,
       timestamp: DateTime.now(),
       note: note ?? 'Transfer to ${destination.name}',
       counterpartyWalletId: destinationWalletId,
@@ -220,7 +221,7 @@ class FinanceController extends StateNotifier<FinanceState> {
 
     final updatedWallets = state.wallets.map((wallet) {
       if (wallet.id != transaction.walletId) return wallet;
-      final delta = transaction.kind == TransactionKind.expense
+      final delta = transaction.kind == m.TransactionKind.expense
           ? transaction.amount
           : -transaction.amount;
       return wallet.copyWith(balance: wallet.balance + delta);
@@ -271,15 +272,15 @@ class FinanceController extends StateNotifier<FinanceState> {
   double monthlySpent(DateTime month) {
     return state.transactions
         .where((tx) =>
-            tx.kind == TransactionKind.expense &&
+            tx.kind == m.TransactionKind.expense &&
             tx.timestamp.year == month.year &&
             tx.timestamp.month == month.month)
         .fold<double>(0, (sum, tx) => sum + tx.amount);
   }
 
-  Map<Category, double> categoryBreakdown(DateTime month) {
+  Map<m.Category, double> categoryBreakdown(DateTime month) {
     final expenseTransactions = state.transactions.where((tx) =>
-        tx.kind == TransactionKind.expense &&
+        tx.kind == m.TransactionKind.expense &&
         tx.timestamp.year == month.year &&
         tx.timestamp.month == month.month);
     final grouped = groupBy(expenseTransactions, (tx) => tx.categoryId);
@@ -290,9 +291,9 @@ class FinanceController extends StateNotifier<FinanceState> {
     };
   }
 
-  double budgetProgress(Budget budget) {
+  double budgetProgress(m.Budget budget) {
     final relevantTransactions = state.transactions.where((tx) {
-      if (tx.kind != TransactionKind.expense) return false;
+      if (tx.kind != m.TransactionKind.expense) return false;
       final inPeriod = !tx.timestamp.isBefore(budget.periodStart) &&
           !tx.timestamp.isAfter(budget.periodEnd);
       if (!inPeriod) return false;
@@ -306,12 +307,12 @@ class FinanceController extends StateNotifier<FinanceState> {
   double _applyAmountToBalance({
     required double balance,
     required double amount,
-    required TransactionKind kind,
+    required m.TransactionKind kind,
   }) {
     final updated = switch (kind) {
-      TransactionKind.expense => balance - amount,
-      TransactionKind.income => balance + amount,
-      TransactionKind.transfer => balance,
+      m.TransactionKind.expense => balance - amount,
+      m.TransactionKind.income => balance + amount,
+      m.TransactionKind.transfer => balance,
     };
     return double.parse(updated.toStringAsFixed(2));
   }
