@@ -1,15 +1,18 @@
 import 'dart:convert';
 
-import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../finance_state.dart';
-import '../models/budget.dart' as models;
-import '../models/category.dart' as models;
-import '../models/transaction_record.dart' as models;
+import '../models/budget.dart';
+import '../models/category.dart';
+import '../models/transaction_record.dart';
 import '../models/user_settings.dart';
-import '../models/wallet.dart' as models;
+import '../models/wallet.dart';
+
+// NEW: alias import so we can qualify enums/constants safely.
+import '../models/models.dart' as models;
 
 class FinanceApiException implements Exception {
   FinanceApiException(this.statusCode, this.message);
@@ -28,8 +31,7 @@ class FinanceApiClient {
     this.tokenProvider,
   })  : _client = httpClient ?? http.Client(),
         _baseUri = _parseBaseUri(
-          baseUrl ??
-              const String.fromEnvironment('API_BASE_URL', defaultValue: ''),
+          baseUrl ?? const String.fromEnvironment('API_BASE_URL', defaultValue: ''),
         );
 
   final http.Client _client;
@@ -56,9 +58,7 @@ class FinanceApiClient {
   }
 
   Future<Map<String, String>> _headers() async {
-    final headers = <String, String>{
-      'Content-Type': 'application/json',
-    };
+    final headers = <String, String>{'Content-Type': 'application/json'};
     if (tokenProvider != null) {
       final token = await tokenProvider!();
       if (token != null && token.isNotEmpty) {
@@ -81,6 +81,7 @@ class FinanceApiClient {
         .resolve(path.startsWith('/') ? path.substring(1) : path)
         .replace(queryParameters: query);
     final headers = await _headers();
+
     late http.Response response;
     switch (method) {
       case 'GET':
@@ -117,10 +118,9 @@ class FinanceApiClient {
     }
 
     if (response.statusCode >= 400) {
-      final message =
-          decoded is Map<String, dynamic> && decoded['message'] is String
-              ? decoded['message'] as String
-              : 'Request failed with status ${response.statusCode}';
+      final message = decoded is Map<String, dynamic> && decoded['message'] is String
+          ? decoded['message'] as String
+          : 'Request failed with status ${response.statusCode}';
       throw FinanceApiException(response.statusCode, message);
     }
 
@@ -140,14 +140,10 @@ class FinanceApiClient {
       }),
     ]);
 
-    final accountsJson =
-        (results[0] as List<dynamic>? ?? const []).cast<Map<String, dynamic>>();
-    final categoriesJson =
-        (results[1] as List<dynamic>? ?? const []).cast<Map<String, dynamic>>();
-    final transactionsJson =
-        (results[2] as List<dynamic>? ?? const []).cast<Map<String, dynamic>>();
-    final budgetsJson =
-        (results[3] as List<dynamic>? ?? const []).cast<Map<String, dynamic>>();
+    final accountsJson = (results[0] as List<dynamic>? ?? const []).cast<Map<String, dynamic>>();
+    final categoriesJson = (results[1] as List<dynamic>? ?? const []).cast<Map<String, dynamic>>();
+    final transactionsJson = (results[2] as List<dynamic>? ?? const []).cast<Map<String, dynamic>>();
+    final budgetsJson = (results[3] as List<dynamic>? ?? const []).cast<Map<String, dynamic>>();
 
     final wallets = accountsJson.map(_mapAccount).toList();
     final categories = categoriesJson.map(_mapCategory).toList();
@@ -205,19 +201,16 @@ class FinanceApiClient {
     await _request('DELETE', '/transactions/$txnId');
   }
 
-  models.Wallet _mapAccount(Map<String, dynamic> json) {
+  Wallet _mapAccount(Map<String, dynamic> json) {
     final type = switch ((json['type'] as String? ?? 'cash').toLowerCase()) {
-      'bank' => models.WalletType.bank,
-      'card' => models.WalletType.card,
-      'crypto' => models.WalletType.crypto,
-      _ => models.WalletType.cash,
+      'bank' => WalletType.bank,
+      'card' => WalletType.card,
+      'crypto' => WalletType.crypto,
+      _ => WalletType.cash,
     };
-    final balanceValue =
-        json['currentBalance'] ?? json['openingBalance'] ?? 0;
-    final balance = balanceValue is num
-        ? balanceValue.toDouble()
-        : double.tryParse(balanceValue.toString()) ?? 0.0;
-    return models.Wallet(
+    final balanceValue = json['currentBalance'] ?? json['openingBalance'] ?? 0;
+    final balance = balanceValue is num ? balanceValue.toDouble() : double.tryParse(balanceValue.toString()) ?? 0.0;
+    return Wallet(
       id: json['accountId'] as String? ?? '',
       name: json['name'] as String? ?? 'Wallet',
       currency: (json['currency'] as String? ?? 'USD').toUpperCase(),
@@ -227,13 +220,12 @@ class FinanceApiClient {
     );
   }
 
-  models.Category _mapCategory(Map<String, dynamic> json) {
-    final type =
-        (json['type'] as String? ?? 'expense').toLowerCase() == 'income'
-            ? models.CategoryType.income
-            : models.CategoryType.expense;
+  Category _mapCategory(Map<String, dynamic> json) {
+    final type = (json['type'] as String? ?? 'expense').toLowerCase() == 'income'
+        ? CategoryType.income
+        : CategoryType.expense;
     final color = _parseColor(json['color'] as String?);
-    return models.Category(
+    return Category(
       id: json['categoryId'] as String? ?? '',
       name: json['name'] as String? ?? 'Category',
       type: type,
@@ -242,17 +234,17 @@ class FinanceApiClient {
     );
   }
 
-  models.TransactionRecord _mapTransaction(Map<String, dynamic> json) {
+  TransactionRecord _mapTransaction(Map<String, dynamic> json) {
     final type = (json['type'] as String? ?? 'expense').toLowerCase();
-    final kind =
-        type == 'income' ? TransactionKind.income : TransactionKind.expense;
-    final occurredAt =
-        DateTime.tryParse(json['occurredAt'] as String? ?? '') ??
-            DateTime.now();
+    // FIX: qualify the enum
+    final kind = type == 'income'
+        ? models.TransactionKind.income
+        : models.TransactionKind.expense;
+
+    final occurredAt = DateTime.tryParse(json['occurredAt'] as String? ?? '') ?? DateTime.now();
     final fx = json['fx_rate_to_base'];
-    final fxRate =
-        fx is num ? fx.toDouble() : double.tryParse(fx?.toString() ?? '') ?? 1.0;
-    return models.TransactionRecord(
+    final fxRate = fx is num ? fx.toDouble() : double.tryParse(fx?.toString() ?? '') ?? 1.0;
+    return TransactionRecord(
       id: json['txnId'] as String? ?? json['sk'] as String? ?? '',
       walletId: json['accountId'] as String? ?? '',
       amount: (json['amount'] as num? ?? 0).toDouble(),
@@ -261,25 +253,19 @@ class FinanceApiClient {
       kind: kind,
       timestamp: occurredAt,
       note: json['note'] as String?,
-      tags: (json['tags'] as List<dynamic>? ?? const [])
-          .map((e) => e.toString())
-          .toList(growable: false),
+      tags: (json['tags'] as List<dynamic>? ?? const []).map((e) => e.toString()).toList(growable: false),
       fxRate: fxRate,
     );
   }
 
-  models.Budget _mapBudget(Map<String, dynamic> json) {
-    final periodStart =
-        DateTime.tryParse(json['periodStart'] as String? ?? '') ??
-            DateTime.now();
-    final periodEnd =
-        DateTime.tryParse(json['periodEnd'] as String? ?? '') ?? periodStart;
-    return models.Budget(
-      id: json['periodCat'] as String? ??
-          '${json['month'] ?? ''}#${json['categoryId'] ?? 'all'}',
+  Budget _mapBudget(Map<String, dynamic> json) {
+    final periodStart = DateTime.tryParse(json['periodStart'] as String? ?? '') ?? DateTime.now();
+    final periodEnd = DateTime.tryParse(json['periodEnd'] as String? ?? '') ?? periodStart;
+    return Budget(
+      id: json['periodCat'] as String? ?? '${json['month'] ?? ''}#${json['categoryId'] ?? 'all'}',
       currency: (json['currency'] as String? ?? 'USD').toUpperCase(),
       limit: (json['limit'] as num? ?? 0).toDouble(),
-      period: models.BudgetPeriod.monthly,
+      period: BudgetPeriod.monthly,
       periodStart: periodStart,
       periodEnd: periodEnd,
       categoryId: json['categoryId'] as String?,
