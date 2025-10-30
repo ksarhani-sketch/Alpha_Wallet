@@ -60,7 +60,7 @@ class CognitoAuthService {
 
     final config = await _configLoader.load();
     if (config == null || config.trim().isEmpty) {
-      throw AmplifyConfigValidationException(
+      throw AmplifyException(
         'Amplify configuration is missing. '
         'Provide amplifyconfiguration.json or pass --dart-define=AMPLIFY_CONFIG with the Cognito config JSON.',
       );
