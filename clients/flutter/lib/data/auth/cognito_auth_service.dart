@@ -1,15 +1,14 @@
 import 'dart:async';
+
 import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
 import 'package:amplify_flutter/amplify_flutter.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter/foundation.dart';
+
 import 'amplify_config_loader.dart';
 
 class CognitoAuthService {
-  CognitoAuthService({
-    AmplifyAuthCognito? authPlugin,
-    AmplifyClass? amplify,
-  })  : _amplify = amplify ?? Amplify,
+  CognitoAuthService({AmplifyAuthCognito? authPlugin, AmplifyClass? amplify})
+      : _amplify = amplify ?? Amplify,
         _authPlugin = authPlugin ?? AmplifyAuthCognito();
 
   final AmplifyClass _amplify;
@@ -29,14 +28,14 @@ class CognitoAuthService {
   }
 
   Future<void> _configure() async {
-    try {
-      if (!_pluginAdded) {
+    // Add plugin (no generic type param)
+    if (!_pluginAdded) {
+      try {
         await _amplify.addPlugin(_authPlugin);
         _pluginAdded = true;
+      } on AmplifyAlreadyConfiguredException {
+        _pluginAdded = true;
       }
-    } catch (e) {
-      debugPrint("Amplify plugin already added or failed: $e");
-      _pluginAdded = true;
     }
 
     if (_amplify.isConfigured) return;
@@ -46,7 +45,7 @@ class CognitoAuthService {
       throw const AuthException(
         'Amplify configuration is missing',
         recoverySuggestion:
-            'Provide amplifyconfiguration.json or pass AMPLIFY_CONFIG.',
+            'Provide amplifyconfiguration.json or pass --dart-define=AMPLIFY_CONFIG with the Cognito config JSON.',
       );
     }
 
@@ -55,17 +54,14 @@ class CognitoAuthService {
 
   Future<CognitoAuthSession> _fetchSession({bool forceRefresh = false}) async {
     await ensureConfigured();
-
     final session = await Amplify.Auth.fetchAuthSession(
       options: FetchAuthSessionOptions(forceRefresh: forceRefresh),
     );
-
     if (session is! CognitoAuthSession) {
       throw const AuthException(
-        'Expected CognitoAuthSession but got another type.',
+        'Expected a CognitoAuthSession but received a different session type.',
       );
     }
-
     return session;
   }
 
@@ -73,7 +69,9 @@ class CognitoAuthService {
     try {
       final session = await _fetchSession();
       return session.isSignedIn;
-    } catch (_) {
+    } on SignedOutException {
+      return false;
+    } on InvalidStateException {
       return false;
     }
   }
@@ -81,7 +79,6 @@ class CognitoAuthService {
   Future<void> signIn() async {
     await ensureConfigured();
     if (await isSignedIn()) return;
-
     await Amplify.Auth.signInWithWebUI();
   }
 
@@ -89,15 +86,22 @@ class CognitoAuthService {
     await ensureConfigured();
     try {
       await Amplify.Auth.signOut();
-    } catch (_) {}
+    } on SignedOutException {
+      // already signed out
+    }
   }
 
   Future<String?> getLatestIdToken({bool forceRefresh = false}) async {
     try {
       final session = await _fetchSession(forceRefresh: forceRefresh);
-      return session.userPoolTokens?.idToken;
-    } catch (err, stack) {
-      debugPrint('Token fetch error: $err\n$stack');
+      if (!session.isSignedIn) return null;
+      final tokens = session.userPoolTokens;
+      return tokens?.idToken;
+    } on SignedOutException {
+      return null;
+    } on InvalidStateException catch (error, stackTrace) {
+      debugPrint(
+          'CognitoAuthService: invalid state while fetching token: $error\n$stackTrace');
       return null;
     }
   }
@@ -106,7 +110,7 @@ class CognitoAuthService {
     await ensureConfigured();
     try {
       return await Amplify.Auth.getCurrentUser();
-    } catch (_) {
+    } on SignedOutException {
       return null;
     }
   }
