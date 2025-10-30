@@ -28,24 +28,22 @@ class CognitoAuthService {
   }
 
   Future<void> _configure() async {
-    // Add plugin (no generic type param)
-    if (!_pluginAdded) {
-      try {
-        await _amplify.addPlugin(_authPlugin);
-        _pluginAdded = true;
-      } on AmplifyAlreadyConfiguredException {
+    try {
+      if (!_pluginAdded) {
+        await _amplify.addPlugin<AmplifyAuthPluginInterface>(_authPlugin);
         _pluginAdded = true;
       }
+    } on AmplifyAlreadyConfiguredException {
+      _pluginAdded = true;
     }
 
     if (_amplify.isConfigured) return;
 
     final config = await _configLoader.load();
     if (config == null || config.trim().isEmpty) {
-      throw const AuthException(
-        'Amplify configuration is missing',
-        recoverySuggestion:
-            'Provide amplifyconfiguration.json or pass --dart-define=AMPLIFY_CONFIG with the Cognito config JSON.',
+      throw Exception(
+        'Amplify configuration is missing. '
+        'Provide amplifyconfiguration.json or pass --dart-define=AMPLIFY_CONFIG with the Cognito config JSON.',
       );
     }
 
@@ -58,7 +56,7 @@ class CognitoAuthService {
       options: FetchAuthSessionOptions(forceRefresh: forceRefresh),
     );
     if (session is! CognitoAuthSession) {
-      throw const AuthException(
+      throw StateError(
         'Expected a CognitoAuthSession but received a different session type.',
       );
     }
@@ -95,13 +93,15 @@ class CognitoAuthService {
     try {
       final session = await _fetchSession(forceRefresh: forceRefresh);
       if (!session.isSignedIn) return null;
+
+      // In amplify_auth_cognito 1.x, idToken is a JsonWebToken. Return its raw string.
       final tokens = session.userPoolTokens;
-      return tokens?.idToken;
+      final jwt = tokens?.idToken;
+      return jwt?.raw;
     } on SignedOutException {
       return null;
     } on InvalidStateException catch (error, stackTrace) {
-      debugPrint(
-          'CognitoAuthService: invalid state while fetching token: $error\n$stackTrace');
+      debugPrint('CognitoAuthService: invalid state while fetching token: $error\n$stackTrace');
       return null;
     }
   }
