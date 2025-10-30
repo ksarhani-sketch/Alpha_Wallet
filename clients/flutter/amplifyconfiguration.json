@@ -7,19 +7,23 @@
           "Version": "1.0",
           "CognitoUserPool": {
             "Default": {
-              "PoolId": "us-east-1_luXetQOcO",
-              "AppClientId": "6jeut48jfjnitisukokct008qo",
-              "Region": "us-east-1"
+              "PoolId": "me-south-1_fFgG6pxPx",
+              "AppClientId": "39odnset34onsbp2q283vtt5pp",
+              "Region": "me-south-1"
             }
           },
           "Auth": {
             "Default": {
               "OAuth": {
-                "WebDomain": "us-east-1iuxetq0co.auth.us-east-1.amazoncognito.com",
-                "AppClientId": "6jeut48jfjnitisukokct008qo",
+                "WebDomain": "me-south-1ffgg6pxpx.auth.me-south-1.amazoncognito.com",
+                "AppClientId": "39odnset34onsbp2q283vtt5pp",
                 "SignInRedirectURI": "https://d305my1jjb07x5.cloudfront.net/",
                 "SignOutRedirectURI": "https://d305my1jjb07x5.cloudfront.net/",
-                "Scopes": ["openid", "email", "profile"]
+                "Scopes": [
+                  "openid",
+                  "email",
+                  "profile"
+                ]
               },
               "authenticationFlowType": "USER_SRP_AUTH"
             }
