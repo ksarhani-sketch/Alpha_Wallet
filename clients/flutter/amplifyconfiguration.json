@@ -7,21 +7,17 @@
         "config": {
           "userPool": {
             "Default": {
-              "PoolId": "REPLACE_WITH_USER_POOL_ID",
-              "AppClientId": "REPLACE_WITH_USER_POOL_CLIENT_ID",
-              "Region": "REPLACE_WITH_AWS_REGION"
+              "PoolId": "us-east-1_luXetQoC0",
+              "AppClientId": "6jeut48jfjnitisukokct008qo",
+              "Region": "us-east-1"
             }
           },
           "oauth": {
-            "WebDomain": "REPLACE_WITH_COGNITO_DOMAIN",
-            "AppClientId": "REPLACE_WITH_USER_POOL_CLIENT_ID",
-            "SignInRedirectURI": "alphawallet://auth/",
-            "SignOutRedirectURI": "alphawallet://signout/",
-            "Scopes": [
-              "email",
-              "openid",
-              "profile"
-            ]
+            "WebDomain": "<COGNITO_DOMAIN>",
+            "AppClientId": "6jeut48jfjnitisukokct008qo",
+            "SignInRedirectURI": "<PUBLIC_APP_URL>/",
+            "SignOutRedirectURI": "<PUBLIC_APP_URL>/",
+            "Scopes": ["email", "openid", "profile"]
           }
         }
       }
