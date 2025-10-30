@@ -2,7 +2,7 @@ import 'dart:async';
 import 'dart:math';
 
 import 'package:collection/collection.dart';
-import 'package:flutter/foundation.dart' show debugPrint;
+import 'package:flutter/foundation.dart' show debugPrint; // avoids Category clash
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
@@ -32,7 +32,7 @@ class FinanceController extends StateNotifier<FinanceState> {
         transactions: const [],
         budgets: const [],
         recurringTemplates: const [],
-        settings: const UserSettings(
+        settings: const models.UserSettings( // ← qualify
           userId: 'remote-user',
           primaryCurrency: 'USD',
           locale: 'en',
@@ -108,8 +108,8 @@ class FinanceController extends StateNotifier<FinanceState> {
     final wallet = state.wallets.firstWhere((w) => w.id == walletId);
     final category = state.categories.firstWhere((c) => c.id == categoryId);
     final kind = switch (category.type) {
-      models.CategoryType.expense => TransactionKind.expense,
-      models.CategoryType.income => TransactionKind.income,
+      models.CategoryType.expense => models.TransactionKind.expense,
+      models.CategoryType.income => models.TransactionKind.income,
     };
 
     final rate = fxRate ?? state.fxRates[wallet.currency] ?? 1;
@@ -175,7 +175,7 @@ class FinanceController extends StateNotifier<FinanceState> {
       amount: double.parse(amount.toStringAsFixed(2)),
       currency: source.currency,
       categoryId: 'transfer-out',
-      kind: TransactionKind.transfer,
+      kind: models.TransactionKind.transfer,
       timestamp: DateTime.now(),
       note: note ?? 'Transfer to ${destination.name}',
       counterpartyWalletId: destinationWalletId,
@@ -225,7 +225,7 @@ class FinanceController extends StateNotifier<FinanceState> {
 
     final updatedWallets = state.wallets.map((wallet) {
       if (wallet.id != transaction.walletId) return wallet;
-      final delta = transaction.kind == TransactionKind.expense
+      final delta = transaction.kind == models.TransactionKind.expense
           ? transaction.amount
           : -transaction.amount;
       return wallet.copyWith(balance: wallet.balance + delta);
@@ -276,7 +276,7 @@ class FinanceController extends StateNotifier<FinanceState> {
   double monthlySpent(DateTime month) {
     return state.transactions
         .where((tx) =>
-            tx.kind == TransactionKind.expense &&
+            tx.kind == models.TransactionKind.expense &&
             tx.timestamp.year == month.year &&
             tx.timestamp.month == month.month)
         .fold<double>(0, (sum, tx) => sum + tx.amount);
@@ -284,7 +284,7 @@ class FinanceController extends StateNotifier<FinanceState> {
 
   Map<models.Category, double> categoryBreakdown(DateTime month) {
     final expenseTransactions = state.transactions.where((tx) =>
-        tx.kind == TransactionKind.expense &&
+        tx.kind == models.TransactionKind.expense &&
         tx.timestamp.year == month.year &&
         tx.timestamp.month == month.month);
     final grouped = groupBy(expenseTransactions, (tx) => tx.categoryId);
@@ -297,7 +297,7 @@ class FinanceController extends StateNotifier<FinanceState> {
 
   double budgetProgress(models.Budget budget) {
     final relevantTransactions = state.transactions.where((tx) {
-      if (tx.kind != TransactionKind.expense) return false;
+      if (tx.kind != models.TransactionKind.expense) return false;
       final inPeriod = !tx.timestamp.isBefore(budget.periodStart) &&
           !tx.timestamp.isAfter(budget.periodEnd);
       if (!inPeriod) return false;
@@ -312,12 +312,12 @@ class FinanceController extends StateNotifier<FinanceState> {
   double _applyAmountToBalance({
     required double balance,
     required double amount,
-    required TransactionKind kind,
+    required models.TransactionKind kind, // ← qualify
   }) {
     final updated = switch (kind) {
-      TransactionKind.expense => balance - amount,
-      TransactionKind.income => balance + amount,
-      TransactionKind.transfer => balance,
+      models.TransactionKind.expense => balance - amount,
+      models.TransactionKind.income => balance + amount,
+      models.TransactionKind.transfer => balance,
     };
     return double.parse(updated.toStringAsFixed(2));
   }
