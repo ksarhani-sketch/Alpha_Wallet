@@ -2,22 +2,25 @@
   "auth": {
     "plugins": {
       "awsCognitoAuthPlugin": {
-        "UserAgent": "aws-amplify-cli/2.0",
+        "UserAgent": "aws-amplify-flutter/1.0",
         "Version": "1.0",
-        "config": {
-          "userPool": {
-            "Default": {
-              "PoolId": "us-east-1_luXetQoC0",
-              "AppClientId": "6jeut48jfjnitisukokct008qo",
-              "Region": "us-east-1"
-            }
-          },
-          "oauth": {
-            "WebDomain": "<COGNITO_DOMAIN>",
+        "CognitoUserPool": {
+          "Default": {
+            "PoolId": "us-east-1_luXetQOcO",
             "AppClientId": "6jeut48jfjnitisukokct008qo",
-            "SignInRedirectURI": "<PUBLIC_APP_URL>/",
-            "SignOutRedirectURI": "<PUBLIC_APP_URL>/",
-            "Scopes": ["email", "openid", "profile"]
+            "Region": "us-east-1"
+          }
+        },
+        "Auth": {
+          "Default": {
+            "OAuth": {
+              "WebDomain": "us-east-1iuxetq0co.auth.us-east-1.amazoncognito.com",
+              "AppClientId": "6jeut48jfjnitisukokct008qo",
+              "SignInRedirectURI": "https://d305my1jib07x5.cloudfront.net/",
+              "SignOutRedirectURI": "https://d305my1jib07x5.cloudfront.net/",
+              "Scopes": ["openid", "email", "profile"]
+            },
+            "authenticationFlowType": "USER_SRP_AUTH"
           }
         }
       }
