@@ -66,12 +66,16 @@ class CognitoAuthService {
       );
     }
 
-    final validationMessage = AmplifyConfigLoader.validate(config);
-    if (validationMessage != null) {
-      throw AmplifyConfigValidationException(validationMessage);
+    final validation = AmplifyConfigLoader.validate(config);
+    if (!validation.isValid && validation.error != null) {
+      throw AmplifyConfigValidationException(validation.error!);
     }
 
-    await _amplify.configure(config);
+    for (final warning in validation.warnings) {
+      debugPrint('CognitoAuthService: $warning');
+    }
+
+    await _amplify.configure(validation.config);
   }
 
   Future<CognitoAuthSession> _fetchSession({bool forceRefresh = false}) async {
