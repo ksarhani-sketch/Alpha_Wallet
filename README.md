@@ -28,7 +28,7 @@ Use `sam local` or invoke deployed API URL from API Gateway console.
 
 * Edit `apiBase` in `main.dart` to your API invoke URL.
 * `flutter run` on a device/simulator.
-* Provide web favicon and app icons by uploading `clients/flutter/web/favicon.png`, `clients/flutter/web/icons/Icon-192.png`, and `clients/flutter/web/icons/Icon-512.png` before building the Flutter web bundle.
+* Provide web favicon and app icons by uploading `clients/flutter/web/favicon.png`, `clients/flutter/web/icons/Icon-180.png`, `clients/flutter/web/icons/Icon-192.png`, and `clients/flutter/web/icons/Icon-512.png` before building the Flutter web bundle.
 
 ## Notes
 
