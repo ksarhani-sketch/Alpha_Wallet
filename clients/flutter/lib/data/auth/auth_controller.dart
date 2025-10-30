@@ -32,6 +32,12 @@ class AuthController extends StateNotifier<AuthState> {
           errorMessage: null,
         );
       }
+    } on AmplifyConfigValidationException catch (error, stackTrace) {
+      debugPrint('AuthController: Amplify config validation failed $error\n$stackTrace');
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: error.message,
+      );
     } on AmplifyException catch (error, stackTrace) {
       debugPrint('AuthController: Amplify configuration failed $error\n$stackTrace');
       state = state.copyWith(
@@ -57,6 +63,12 @@ class AuthController extends StateNotifier<AuthState> {
         status: AuthStatus.signedIn,
         username: user?.username,
         errorMessage: null,
+      );
+    } on AmplifyConfigValidationException catch (error, stackTrace) {
+      debugPrint('AuthController: sign-in validation failed $error\n$stackTrace');
+      state = state.copyWith(
+        status: AuthStatus.error,
+        errorMessage: error.message,
       );
     } on AmplifyException catch (error, stackTrace) {
       debugPrint('AuthController: sign-in failed $error\n$stackTrace');
