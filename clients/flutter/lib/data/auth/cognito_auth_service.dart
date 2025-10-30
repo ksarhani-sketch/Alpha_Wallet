@@ -30,7 +30,8 @@ class CognitoAuthService {
   Future<void> _configure() async {
     try {
       if (!_pluginAdded) {
-        await _amplify.addPlugin<AmplifyAuthPluginInterface>(_authPlugin);
+        // ✅ Do NOT provide a generic type parameter here.
+        await _amplify.addPlugin(_authPlugin);
         _pluginAdded = true;
       }
     } on AmplifyAlreadyConfiguredException {
