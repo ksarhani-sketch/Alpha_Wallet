@@ -5,7 +5,7 @@ class AmplifyConfigLoader {
   const AmplifyConfigLoader();
 
   Future<String?> load() async {
-    final configFromDefine = String.fromEnvironment('AMPLIFY_CONFIG');
+    const configFromDefine = String.fromEnvironment('AMPLIFY_CONFIG');
     if (configFromDefine.trim().isNotEmpty) {
       return configFromDefine;
     }

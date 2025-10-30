@@ -1,21 +1,15 @@
 {
-  "name": "Alpha Wallet",
+  "name": "AlphaWallet",
   "short_name": "AlphaWallet",
   "start_url": "/",
+  "scope": "/",
   "display": "standalone",
-  "background_color": "#0B1D2F",
-  "theme_color": "#1E88E5",
-  "description": "Personal finance tracking for budgets, wallets, and recurring transactions.",
+  "background_color": "#0f172a",
+  "theme_color": "#0f172a",
+  "prefer_related_applications": false,
   "icons": [
-    {
-      "src": "icons/Icon-192.png",
-      "sizes": "192x192",
-      "type": "image/png"
-    },
-    {
-      "src": "icons/Icon-512.png",
-      "sizes": "512x512",
-      "type": "image/png"
-    }
+    { "src": "icons/Icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icons/Icon-512.png", "sizes": "512x512", "type": "image/png" },
+    { "src": "icons/Icon-180.png", "sizes": "180x180", "type": "image/png", "purpose": "any" }
   ]
 }
