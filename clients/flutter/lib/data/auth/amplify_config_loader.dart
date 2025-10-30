@@ -7,6 +7,8 @@ class AmplifyConfigLoader {
   const AmplifyConfigLoader();
 
   static final RegExp _placeholderPattern = RegExp(r'REPLACE_WITH_[A-Z0-9_]+');
+  static final RegExp _lineCommentPattern = RegExp(r'^\s*//', multiLine: true);
+  static final RegExp _blockCommentPattern = RegExp(r'/\*');
 
   Future<String?> load() async {
     const configFromDefine = String.fromEnvironment('AMPLIFY_CONFIG');
@@ -34,6 +36,11 @@ class AmplifyConfigLoader {
     if (trimmed.isEmpty) {
       return 'Amplify configuration is empty. '
           'Provide a valid amplifyconfiguration.json or pass --dart-define=AMPLIFY_CONFIG.';
+    }
+
+    if (_lineCommentPattern.hasMatch(trimmed) || _blockCommentPattern.hasMatch(trimmed)) {
+      return 'Amplify configuration contains JavaScript-style comments. '
+          'Remove any // or /* */ comments so the file is valid JSON.';
     }
 
     final placeholders = _placeholderPattern
@@ -71,18 +78,22 @@ class AmplifyConfigLoader {
       return 'Amplify configuration must include auth.plugins.awsCognitoAuthPlugin.';
     }
 
-    final configNode = cognito['config'];
-    if (configNode is! Map<String, dynamic>) {
+    final configNode = _stringKeyedMap(cognito['config']);
+    if (configNode == null) {
       return 'Amplify configuration is missing auth.plugins.awsCognitoAuthPlugin.config.';
     }
 
-    final userPoolNode = configNode['userPool'];
-    if (userPoolNode is! Map<String, dynamic>) {
-      return 'Amplify configuration must include Cognito userPool details.';
+    final userPoolNode = _firstNonNullMap([
+      configNode['userPool'],
+      configNode['UserPool'],
+      configNode['CognitoUserPool'],
+    ]);
+    if (userPoolNode == null) {
+      return 'Amplify configuration must include Cognito user pool details.';
     }
 
-    final defaultPool = userPoolNode['Default'];
-    if (defaultPool is! Map<String, dynamic>) {
+    final defaultPool = _stringKeyedMap(userPoolNode['Default']);
+    if (defaultPool == null) {
       return 'Amplify configuration must include a Default user pool configuration.';
     }
 
@@ -94,8 +105,15 @@ class AmplifyConfigLoader {
     final region = (defaultPool['Region'] as String?)?.trim() ?? '';
     if (region.isEmpty) missingFields.add('userPool.Default.Region');
 
-    final oauth = configNode['oauth'];
-    if (oauth is Map<String, dynamic>) {
+    final authConfig = _stringKeyedMap(configNode['Auth']);
+    final authDefault = _stringKeyedMap(authConfig?['Default']);
+    final oauth = _firstNonNullMap([
+      configNode['oauth'],
+      configNode['OAuth'],
+      authConfig?['OAuth'],
+      authDefault?['OAuth'],
+    ]);
+    if (oauth != null) {
       final webDomain = (oauth['WebDomain'] as String?)?.trim() ?? '';
       if (webDomain.isEmpty) missingFields.add('oauth.WebDomain');
       final redirectUri = (oauth['SignInRedirectURI'] as String?)?.trim() ?? '';
@@ -113,6 +131,22 @@ class AmplifyConfigLoader {
           '${missingFields.join(', ')}.';
     }
 
+    return null;
+  }
+
+  static Map<String, dynamic>? _stringKeyedMap(dynamic value) {
+    if (value is Map<String, dynamic>) return value;
+    if (value is Map) {
+      return value.map((key, value) => MapEntry(key.toString(), value));
+    }
+    return null;
+  }
+
+  static Map<String, dynamic>? _firstNonNullMap(Iterable<dynamic> candidates) {
+    for (final candidate in candidates) {
+      final map = _stringKeyedMap(candidate);
+      if (map != null) return map;
+    }
     return null;
   }
 }
