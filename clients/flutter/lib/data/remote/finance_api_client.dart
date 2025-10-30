@@ -5,11 +5,9 @@ import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 
 import '../finance_state.dart';
-import '../models/budget.dart';
-import '../models/category.dart';
-import '../models/transaction_record.dart';
-import '../models/user_settings.dart';
-import '../models/wallet.dart';
+// ✅ Use a single, aliased barrel import for all domain models to avoid
+//    colliding with flutter/foundation's `Category` annotation.
+import '../models/models.dart' as m;
 
 class FinanceApiException implements Exception {
   FinanceApiException(this.statusCode, this.message);
@@ -76,7 +74,9 @@ class FinanceApiClient {
     if (!isEnabled) {
       throw FinanceApiException(503, 'API client is not configured');
     }
-    final uri = _baseUri!.resolve(path.startsWith('/') ? path.substring(1) : path).replace(queryParameters: query);
+    final uri = _baseUri!
+        .resolve(path.startsWith('/') ? path.substring(1) : path)
+        .replace(queryParameters: query);
     final headers = await _headers();
     late http.Response response;
     switch (method) {
@@ -84,10 +84,18 @@ class FinanceApiClient {
         response = await _client.get(uri, headers: headers);
         break;
       case 'POST':
-        response = await _client.post(uri, headers: headers, body: body == null ? null : jsonEncode(body));
+        response = await _client.post(
+          uri,
+          headers: headers,
+          body: body == null ? null : jsonEncode(body),
+        );
         break;
       case 'PUT':
-        response = await _client.put(uri, headers: headers, body: body == null ? null : jsonEncode(body));
+        response = await _client.put(
+          uri,
+          headers: headers,
+          body: body == null ? null : jsonEncode(body),
+        );
         break;
       case 'DELETE':
         response = await _client.delete(uri, headers: headers);
@@ -128,16 +136,20 @@ class FinanceApiClient {
       }),
     ]);
 
-    final accountsJson = (results[0] as List<dynamic>? ?? const []).cast<Map<String, dynamic>>();
-    final categoriesJson = (results[1] as List<dynamic>? ?? const []).cast<Map<String, dynamic>>();
-    final transactionsJson = (results[2] as List<dynamic>? ?? const []).cast<Map<String, dynamic>>();
-    final budgetsJson = (results[3] as List<dynamic>? ?? const []).cast<Map<String, dynamic>>();
+    final accountsJson =
+        (results[0] as List<dynamic>? ?? const []).cast<Map<String, dynamic>>();
+    final categoriesJson =
+        (results[1] as List<dynamic>? ?? const []).cast<Map<String, dynamic>>();
+    final transactionsJson =
+        (results[2] as List<dynamic>? ?? const []).cast<Map<String, dynamic>>();
+    final budgetsJson =
+        (results[3] as List<dynamic>? ?? const []).cast<Map<String, dynamic>>();
 
-    final wallets = accountsJson.map(_mapAccount).toList();
-    final categories = categoriesJson.map(_mapCategory).toList();
-    final transactions = transactionsJson.map(_mapTransaction).toList()
+    final wallets = accountsJson.map(_mapAccount).toList(growable: false);
+    final categories = categoriesJson.map(_mapCategory).toList(growable: false);
+    final transactions = transactionsJson.map(_mapTransaction).toList(growable: false)
       ..sort((a, b) => b.timestamp.compareTo(a.timestamp));
-    final budgets = budgetsJson.map(_mapBudget).toList();
+    final budgets = budgetsJson.map(_mapBudget).toList(growable: false);
 
     final primaryCurrency = wallets.isNotEmpty ? wallets.first.currency : 'USD';
     final fxRates = <String, double>{primaryCurrency: 1.0};
@@ -147,7 +159,7 @@ class FinanceApiClient {
       }
     }
 
-    final settings = UserSettings(
+    final settings = m.UserSettings(
       userId: 'remote-user',
       primaryCurrency: primaryCurrency,
       locale: 'en',
@@ -189,16 +201,20 @@ class FinanceApiClient {
     await _request('DELETE', '/transactions/$txnId');
   }
 
-  Wallet _mapAccount(Map<String, dynamic> json) {
+  // ---------- Mappers ----------
+
+  m.Wallet _mapAccount(Map<String, dynamic> json) {
     final type = switch ((json['type'] as String? ?? 'cash').toLowerCase()) {
-      'bank' => WalletType.bank,
-      'card' => WalletType.card,
-      'crypto' => WalletType.crypto,
-      _ => WalletType.cash,
+      'bank' => m.WalletType.bank,
+      'card' => m.WalletType.card,
+      'crypto' => m.WalletType.crypto,
+      _ => m.WalletType.cash,
     };
     final balanceValue = json['currentBalance'] ?? json['openingBalance'] ?? 0;
-    final balance = balanceValue is num ? balanceValue.toDouble() : double.tryParse(balanceValue.toString()) ?? 0.0;
-    return Wallet(
+    final balance = balanceValue is num
+        ? balanceValue.toDouble()
+        : double.tryParse(balanceValue.toString()) ?? 0.0;
+    return m.Wallet(
       id: json['accountId'] as String? ?? '',
       name: json['name'] as String? ?? 'Wallet',
       currency: (json['currency'] as String? ?? 'USD').toUpperCase(),
@@ -208,12 +224,12 @@ class FinanceApiClient {
     );
   }
 
-  Category _mapCategory(Map<String, dynamic> json) {
+  m.Category _mapCategory(Map<String, dynamic> json) {
     final type = (json['type'] as String? ?? 'expense').toLowerCase() == 'income'
-        ? CategoryType.income
-        : CategoryType.expense;
+        ? m.CategoryType.income
+        : m.CategoryType.expense;
     final color = _parseColor(json['color'] as String?);
-    return Category(
+    return m.Category(
       id: json['categoryId'] as String? ?? '',
       name: json['name'] as String? ?? 'Category',
       type: type,
@@ -222,13 +238,15 @@ class FinanceApiClient {
     );
   }
 
-  TransactionRecord _mapTransaction(Map<String, dynamic> json) {
+  m.TransactionRecord _mapTransaction(Map<String, dynamic> json) {
     final type = (json['type'] as String? ?? 'expense').toLowerCase();
-    final kind = type == 'income' ? TransactionKind.income : TransactionKind.expense;
-    final occurredAt = DateTime.tryParse(json['occurredAt'] as String? ?? '') ?? DateTime.now();
+    final kind = type == 'income' ? m.TransactionKind.income : m.TransactionKind.expense;
+    final occurredAt =
+        DateTime.tryParse(json['occurredAt'] as String? ?? '') ?? DateTime.now();
     final fx = json['fx_rate_to_base'];
-    final fxRate = fx is num ? fx.toDouble() : double.tryParse(fx?.toString() ?? '') ?? 1.0;
-    return TransactionRecord(
+    final fxRate =
+        fx is num ? fx.toDouble() : double.tryParse(fx?.toString() ?? '') ?? 1.0;
+    return m.TransactionRecord(
       id: json['txnId'] as String? ?? json['sk'] as String? ?? '',
       walletId: json['accountId'] as String? ?? '',
       amount: (json['amount'] as num? ?? 0).toDouble(),
@@ -237,19 +255,24 @@ class FinanceApiClient {
       kind: kind,
       timestamp: occurredAt,
       note: json['note'] as String?,
-      tags: (json['tags'] as List<dynamic>? ?? const []).map((e) => e.toString()).toList(growable: false),
+      tags: (json['tags'] as List<dynamic>? ?? const [])
+          .map((e) => e.toString())
+          .toList(growable: false),
       fxRate: fxRate,
     );
   }
 
-  Budget _mapBudget(Map<String, dynamic> json) {
-    final periodStart = DateTime.tryParse(json['periodStart'] as String? ?? '') ?? DateTime.now();
-    final periodEnd = DateTime.tryParse(json['periodEnd'] as String? ?? '') ?? periodStart;
-    return Budget(
-      id: json['periodCat'] as String? ?? '${json['month'] ?? ''}#${json['categoryId'] ?? 'all'}',
+  m.Budget _mapBudget(Map<String, dynamic> json) {
+    final periodStart =
+        DateTime.tryParse(json['periodStart'] as String? ?? '') ?? DateTime.now();
+    final periodEnd =
+        DateTime.tryParse(json['periodEnd'] as String? ?? '') ?? periodStart;
+    return m.Budget(
+      id: json['periodCat'] as String? ??
+          '${json['month'] ?? ''}#${json['categoryId'] ?? 'all'}',
       currency: (json['currency'] as String? ?? 'USD').toUpperCase(),
       limit: (json['limit'] as num? ?? 0).toDouble(),
-      period: BudgetPeriod.monthly,
+      period: m.BudgetPeriod.monthly,
       periodStart: periodStart,
       periodEnd: periodEnd,
       categoryId: json['categoryId'] as String?,
@@ -257,6 +280,8 @@ class FinanceApiClient {
       rollover: json['rollover'] == true,
     );
   }
+
+  // ---------- Helpers ----------
 
   Color _parseColor(String? hex) {
     if (hex == null || hex.isEmpty) {
