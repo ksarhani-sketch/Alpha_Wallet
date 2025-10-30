@@ -16,8 +16,8 @@
             "OAuth": {
               "WebDomain": "us-east-1iuxetq0co.auth.us-east-1.amazoncognito.com",
               "AppClientId": "6jeut48jfjnitisukokct008qo",
-              "SignInRedirectURI": "https://d305my1jib07x5.cloudfront.net/",
-              "SignOutRedirectURI": "https://d305my1jib07x5.cloudfront.net/",
+              "SignInRedirectURI": "https://d305my1jjb07x5.cloudfront.net/",
+              "SignOutRedirectURI": "https://d305my1jjb07x5.cloudfront.net/",
               "Scopes": ["openid", "email", "profile"]
             },
             "authenticationFlowType": "USER_SRP_AUTH"
