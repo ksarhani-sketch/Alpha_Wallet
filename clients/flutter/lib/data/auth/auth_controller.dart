@@ -84,7 +84,7 @@ class AuthController extends StateNotifier<AuthState> {
 
   Future<void> retryConfiguration() async {
     state = const AuthState.initial();
-    _authService.reset();
+    await _authService.reset();
     await _bootstrap();
   }
 

@@ -1,11 +1,11 @@
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart' show rootBundle, PlatformException; // ← add PlatformException
+import 'package:flutter/services.dart' show PlatformException, rootBundle;
 
 class AmplifyConfigLoader {
   const AmplifyConfigLoader();
 
   Future<String?> load() async {
-    final configFromDefine = String.fromEnvironment('AMPLIFY_CONFIG');
+    const configFromDefine = String.fromEnvironment('AMPLIFY_CONFIG');
     if (configFromDefine.trim().isNotEmpty) {
       return configFromDefine;
     }
