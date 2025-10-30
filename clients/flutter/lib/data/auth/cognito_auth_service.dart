@@ -6,6 +6,15 @@ import 'package:flutter/foundation.dart';
 
 import 'amplify_config_loader.dart';
 
+class AmplifyConfigValidationException implements Exception {
+  AmplifyConfigValidationException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => message;
+}
+
 class CognitoAuthService {
   CognitoAuthService({AmplifyAuthCognito? authPlugin, AmplifyClass? amplify})
       : _amplify = amplify ?? Amplify,
@@ -23,8 +32,17 @@ class CognitoAuthService {
     return _configureFuture!;
   }
 
-  void reset() {
+  Future<void> reset() async {
     _configureFuture = null;
+    if (_pluginAdded || _amplify.isConfigured) {
+      try {
+        await _amplify.reset();
+      } on AmplifyException catch (error, stackTrace) {
+        debugPrint('CognitoAuthService: failed to reset Amplify $error\n$stackTrace');
+      } finally {
+        _pluginAdded = false;
+      }
+    }
   }
 
   Future<void> _configure() async {
@@ -42,10 +60,15 @@ class CognitoAuthService {
 
     final config = await _configLoader.load();
     if (config == null || config.trim().isEmpty) {
-      throw Exception(
+      throw AmplifyConfigValidationException(
         'Amplify configuration is missing. '
         'Provide amplifyconfiguration.json or pass --dart-define=AMPLIFY_CONFIG with the Cognito config JSON.',
       );
+    }
+
+    final validationMessage = AmplifyConfigLoader.validate(config);
+    if (validationMessage != null) {
+      throw AmplifyConfigValidationException(validationMessage);
     }
 
     await _amplify.configure(config);
