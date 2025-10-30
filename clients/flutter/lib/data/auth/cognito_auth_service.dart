@@ -29,12 +29,16 @@ class CognitoAuthService {
 
   Future<void> _configure() async {
     try {
+      // Amplify Flutter v2: no generic type arg on addPlugin
       if (!_pluginAdded) {
-        await _amplify.addPlugin<AmplifyAuthPluginInterface>(_authPlugin);
+        await _amplify.addPlugin(_authPlugin);
         _pluginAdded = true;
       }
     } on AmplifyAlreadyConfiguredException {
       _pluginAdded = true;
+    } catch (e, st) {
+      debugPrint('CognitoAuthService: addPlugin failed: $e\n$st');
+      rethrow;
     }
 
     if (_amplify.isConfigured) {
@@ -43,8 +47,8 @@ class CognitoAuthService {
 
     final config = await _configLoader.load();
     if (config == null || config.trim().isEmpty) {
-      throw const AmplifyException(
-        'Amplify configuration is missing',
+      throw AmplifyException(
+        message: 'Amplify configuration is missing',
         recoverySuggestion:
             'Provide amplifyconfiguration.json or pass --dart-define=AMPLIFY_CONFIG with the Cognito config JSON.',
       );
@@ -59,8 +63,8 @@ class CognitoAuthService {
       options: FetchAuthSessionOptions(forceRefresh: forceRefresh),
     );
     if (session is! CognitoAuthSession) {
-      throw const AmplifyException(
-        'Expected a CognitoAuthSession but received a different session type.',
+      throw AmplifyException(
+        message: 'Expected a CognitoAuthSession but received a different session type.',
       );
     }
     return session;
@@ -79,9 +83,7 @@ class CognitoAuthService {
 
   Future<void> signIn() async {
     await ensureConfigured();
-    if (await isSignedIn()) {
-      return;
-    }
+    if (await isSignedIn()) return;
     await Amplify.Auth.signInWithWebUI();
   }
 
@@ -90,25 +92,26 @@ class CognitoAuthService {
     try {
       await Amplify.Auth.signOut();
     } on SignedOutException {
-      // already signed out
+      // already signed out; ignore
     }
   }
 
   Future<String?> getLatestIdToken({bool forceRefresh = false}) async {
     try {
       final session = await _fetchSession(forceRefresh: forceRefresh);
-      if (!session.isSignedIn) {
-        return null;
-      }
+      if (!session.isSignedIn) return null;
+
       final tokens = session.userPoolTokens;
-      if (tokens == null) {
-        return null;
-      }
-      return tokens.idToken;
+      if (tokens == null) return null;
+
+      // v2: idToken is JsonWebToken → return the raw string
+      return tokens.idToken.raw;
     } on SignedOutException {
       return null;
     } on InvalidStateException catch (error, stackTrace) {
-      debugPrint('CognitoAuthService: invalid state while fetching token: $error\n$stackTrace');
+      debugPrint(
+        'CognitoAuthService: invalid state while fetching token: $error\n$stackTrace',
+      );
       return null;
     }
   }
