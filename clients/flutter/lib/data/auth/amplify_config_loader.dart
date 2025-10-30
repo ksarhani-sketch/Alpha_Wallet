@@ -7,8 +7,6 @@ class AmplifyConfigLoader {
   const AmplifyConfigLoader();
 
   static final RegExp _placeholderPattern = RegExp(r'REPLACE_WITH_[A-Z0-9_]+');
-  static final RegExp _lineCommentPattern = RegExp(r'^\s*//', multiLine: true);
-  static final RegExp _blockCommentPattern = RegExp(r'/\*');
 
   Future<String?> load() async {
     const configFromDefine = String.fromEnvironment('AMPLIFY_CONFIG');
@@ -38,7 +36,7 @@ class AmplifyConfigLoader {
           'Provide a valid amplifyconfiguration.json or pass --dart-define=AMPLIFY_CONFIG.';
     }
 
-    if (_lineCommentPattern.hasMatch(trimmed) || _blockCommentPattern.hasMatch(trimmed)) {
+    if (_containsJavaScriptStyleComments(trimmed)) {
       return 'Amplify configuration contains JavaScript-style comments. '
           'Remove any // or /* */ comments so the file is valid JSON.';
     }
@@ -148,5 +146,40 @@ class AmplifyConfigLoader {
       if (map != null) return map;
     }
     return null;
+  }
+
+  static bool _containsJavaScriptStyleComments(String source) {
+    var inString = false;
+    var escaped = false;
+    for (var index = 0; index < source.length; index++) {
+      final current = source[index];
+      if (escaped) {
+        escaped = false;
+        continue;
+      }
+
+      if (current == '\\') {
+        escaped = true;
+        continue;
+      }
+
+      if (current == '"') {
+        inString = !inString;
+        continue;
+      }
+
+      if (inString) {
+        continue;
+      }
+
+      if (current == '/') {
+        if (index + 1 >= source.length) return false;
+        final next = source[index + 1];
+        if (next == '/' || next == '*') {
+          return true;
+        }
+      }
+    }
+    return false;
   }
 }
