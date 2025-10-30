@@ -1,11 +1,15 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
-import 'package:flutter/services.dart' show rootBundle, PlatformException; // ← add PlatformException
+import 'package:flutter/services.dart' show PlatformException, rootBundle;
 
 class AmplifyConfigLoader {
   const AmplifyConfigLoader();
 
+  static final RegExp _placeholderPattern = RegExp(r'REPLACE_WITH_[A-Z0-9_]+');
+
   Future<String?> load() async {
-    final configFromDefine = String.fromEnvironment('AMPLIFY_CONFIG');
+    const configFromDefine = String.fromEnvironment('AMPLIFY_CONFIG');
     if (configFromDefine.trim().isNotEmpty) {
       return configFromDefine;
     }
@@ -21,5 +25,94 @@ class AmplifyConfigLoader {
       debugPrint('AmplifyConfigLoader: platform error – ${error.message}');
       return null;
     }
+  }
+
+  /// Returns a human-readable validation error if [config] looks incomplete.
+  /// Otherwise returns `null` when the config appears usable.
+  static String? validate(String config) {
+    final trimmed = config.trim();
+    if (trimmed.isEmpty) {
+      return 'Amplify configuration is empty. '
+          'Provide a valid amplifyconfiguration.json or pass --dart-define=AMPLIFY_CONFIG.';
+    }
+
+    final placeholders = _placeholderPattern
+        .allMatches(trimmed)
+        .map((match) => match.group(0)!)
+        .toSet();
+    if (placeholders.isNotEmpty) {
+      final formatted = placeholders.map((value) => value.replaceFirst('REPLACE_WITH_', '')).join(', ');
+      return 'Amplify configuration still contains placeholder values '
+          'for: $formatted. Update amplifyconfiguration.json or the AMPLIFY_CONFIG define.';
+    }
+
+    dynamic decoded;
+    try {
+      decoded = jsonDecode(trimmed);
+    } catch (error) {
+      return 'Amplify configuration is not valid JSON: $error';
+    }
+    if (decoded is! Map<String, dynamic>) {
+      return 'Amplify configuration must decode to a JSON object.';
+    }
+
+    final auth = decoded['auth'];
+    if (auth is! Map<String, dynamic>) {
+      return 'Amplify configuration is missing the "auth" section.';
+    }
+
+    final plugins = auth['plugins'];
+    if (plugins is! Map<String, dynamic>) {
+      return 'Amplify configuration is missing auth.plugins.';
+    }
+
+    final cognito = plugins['awsCognitoAuthPlugin'];
+    if (cognito is! Map<String, dynamic>) {
+      return 'Amplify configuration must include auth.plugins.awsCognitoAuthPlugin.';
+    }
+
+    final configNode = cognito['config'];
+    if (configNode is! Map<String, dynamic>) {
+      return 'Amplify configuration is missing auth.plugins.awsCognitoAuthPlugin.config.';
+    }
+
+    final userPoolNode = configNode['userPool'];
+    if (userPoolNode is! Map<String, dynamic>) {
+      return 'Amplify configuration must include Cognito userPool details.';
+    }
+
+    final defaultPool = userPoolNode['Default'];
+    if (defaultPool is! Map<String, dynamic>) {
+      return 'Amplify configuration must include a Default user pool configuration.';
+    }
+
+    final missingFields = <String>[];
+    final poolId = (defaultPool['PoolId'] as String?)?.trim() ?? '';
+    if (poolId.isEmpty) missingFields.add('userPool.Default.PoolId');
+    final appClientId = (defaultPool['AppClientId'] as String?)?.trim() ?? '';
+    if (appClientId.isEmpty) missingFields.add('userPool.Default.AppClientId');
+    final region = (defaultPool['Region'] as String?)?.trim() ?? '';
+    if (region.isEmpty) missingFields.add('userPool.Default.Region');
+
+    final oauth = configNode['oauth'];
+    if (oauth is Map<String, dynamic>) {
+      final webDomain = (oauth['WebDomain'] as String?)?.trim() ?? '';
+      if (webDomain.isEmpty) missingFields.add('oauth.WebDomain');
+      final redirectUri = (oauth['SignInRedirectURI'] as String?)?.trim() ?? '';
+      if (redirectUri.isEmpty) missingFields.add('oauth.SignInRedirectURI');
+      final signOutRedirectUri = (oauth['SignOutRedirectURI'] as String?)?.trim() ?? '';
+      if (signOutRedirectUri.isEmpty) {
+        missingFields.add('oauth.SignOutRedirectURI');
+      }
+    } else {
+      missingFields.add('oauth');
+    }
+
+    if (missingFields.isNotEmpty) {
+      return 'Amplify configuration is missing required Cognito fields: '
+          '${missingFields.join(', ')}.';
+    }
+
+    return null;
   }
 }
