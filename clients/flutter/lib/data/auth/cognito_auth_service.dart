@@ -105,7 +105,7 @@ class CognitoAuthService {
   Future<void> signIn() async {
     await ensureConfigured();
     if (await isSignedIn()) return;
-    await Amplify.Auth.signInWithWebUI();
+    await Amplify.Auth.signInWithWebUI(provider: AuthProvider.cognito);
   }
 
   Future<void> signOut() async {
