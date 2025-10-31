@@ -181,6 +181,34 @@ class AmplifyConfigLoader {
       if (signOutRedirectUri.isEmpty) {
         missingFields.add('oauth.SignOutRedirectURI');
       }
+      if (redirectUri.isNotEmpty) {
+        final parsedRedirectUri = Uri.tryParse(redirectUri);
+        if (parsedRedirectUri == null ||
+            !parsedRedirectUri.hasScheme ||
+            parsedRedirectUri.scheme.toLowerCase() != 'https' ||
+            !parsedRedirectUri.hasAuthority) {
+          return AmplifyConfigValidationResult(
+            config: trimmed,
+            warnings: warnings,
+            error:
+                'Amplify configuration SignInRedirectURI must be an HTTPS URL. Custom URI schemes are reserved for native builds.',
+          );
+        }
+      }
+      if (signOutRedirectUri.isNotEmpty) {
+        final parsedSignOutRedirectUri = Uri.tryParse(signOutRedirectUri);
+        if (parsedSignOutRedirectUri == null ||
+            !parsedSignOutRedirectUri.hasScheme ||
+            parsedSignOutRedirectUri.scheme.toLowerCase() != 'https' ||
+            !parsedSignOutRedirectUri.hasAuthority) {
+          return AmplifyConfigValidationResult(
+            config: trimmed,
+            warnings: warnings,
+            error:
+                'Amplify configuration SignOutRedirectURI must be an HTTPS URL. Custom URI schemes are reserved for native builds.',
+          );
+        }
+      }
     } else {
       missingFields.add('oauth');
     }
