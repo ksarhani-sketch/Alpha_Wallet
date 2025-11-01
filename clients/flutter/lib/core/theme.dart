@@ -21,7 +21,8 @@ ThemeData buildLightTheme() {
     inputDecorationTheme: const InputDecorationTheme(
       border: OutlineInputBorder(),
     ),
-    cardTheme: CardTheme(
+    // Flutter 3.22+: expects CardThemeData instead of CardTheme
+    cardTheme: CardThemeData(
       surfaceTintColor: colorScheme.surface,
       margin: const EdgeInsets.all(8),
       elevation: 1,
@@ -47,7 +48,8 @@ ThemeData buildDarkTheme() {
     inputDecorationTheme: const InputDecorationTheme(
       border: OutlineInputBorder(),
     ),
-    cardTheme: CardTheme(
+    // Same fix here
+    cardTheme: CardThemeData(
       surfaceTintColor: colorScheme.surface,
       margin: const EdgeInsets.all(8),
       elevation: 1,
