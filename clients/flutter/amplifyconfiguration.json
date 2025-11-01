@@ -1,37 +1,36 @@
 {
+  "UserAgent": "aws-amplify-flutter/1.0",
+  "Version": "1.0",
   "auth": {
     "plugins": {
       "awsCognitoAuthPlugin": {
-        "UserAgent": "aws-amplify-flutter/2.0",
-        "Version": "1.0",
-
-        "CredentialsProvider": {
-          "CognitoIdentity": {
+        "config": {
+          "CognitoUserPool": {
             "Default": {
-              "PoolId": "me-south-1:f1aa1e21-f5ef-4150-b780-f2df82730ec6",
+              "PoolId": "me-south-1_fFgG6gpxPx",
+              "AppClientId": "39odnset34onsbp2q283vtt5pp",
               "Region": "me-south-1"
             }
-          }
-        },
-
-        "CognitoUserPool": {
-          "Default": {
-            "PoolId": "me-south-1_fFgG6gpxPx",
-            "AppClientId": "39odnset34onsbp2q283vtt5pp",
-            "Region": "me-south-1"
-          }
-        },
-
-        "Auth": {
-          "Default": {
-            "OAuth": {
-              "WebDomain": "REPLACE_WITH_YOUR_HOSTED_UI_DOMAIN.auth.me-south-1.amazoncognito.com",
-              "AppClientId": "39odnset34onsbp2q283vtt5pp",
-              "SignInRedirectURI": "https://d305my1jjb07x5.cloudfront.net/",
-              "SignOutRedirectURI": "https://d305my1jjb07x5.cloudfront.net/",
-              "Scopes": ["openid", "email", "profile"]
-            },
-            "authenticationFlowType": "USER_SRP_AUTH"
+          },
+          "CredentialsProvider": {
+            "CognitoIdentity": {
+              "Default": {
+                "PoolId": "me-south-1:f1aa1e21-f5ef-4150-b780-f2df82730ec6",
+                "Region": "me-south-1"
+              }
+            }
+          },
+          "Auth": {
+            "Default": {
+              "OAuth": {
+                "WebDomain": "me-south-1ffgg6pxpx.auth.me-south-1.amazoncognito.com",
+                "AppClientId": "39odnset34onsbp2q283vtt5pp",
+                "SignInRedirectURI": "https://d305my1jjb07x5.cloudfront.net/",
+                "SignOutRedirectURI": "https://d305my1jjb07x5.cloudfront.net/",
+                "Scopes": ["openid", "email", "profile"]
+              },
+              "authenticationFlowType": "USER_SRP_AUTH"
+            }
           }
         }
       }
