@@ -4,7 +4,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart' show PlatformException, rootBundle;
 
 class AmplifyConfigLoader {
-  const AmplifyConfigLoader();
+  const AmplifyConfigLoader({this.fallbackConfig});
+
+  final String? fallbackConfig;
 
   static final RegExp _placeholderPattern = RegExp(r'REPLACE_WITH_[A-Z0-9_]+');
 
@@ -16,15 +18,23 @@ class AmplifyConfigLoader {
 
     try {
       final asset = await rootBundle.loadString('amplifyconfiguration.json');
-      if (asset.trim().isEmpty) return null;
-      return asset;
+      if (asset.trim().isNotEmpty) {
+        return asset;
+      }
+      debugPrint('AmplifyConfigLoader: amplifyconfiguration.json was empty');
     } on FlutterError catch (error) {
       debugPrint('AmplifyConfigLoader: missing asset – ${error.message}');
-      return null;
     } on PlatformException catch (error) {
       debugPrint('AmplifyConfigLoader: platform error – ${error.message}');
-      return null;
     }
+
+    final fallback = fallbackConfig?.trim();
+    if (fallback != null && fallback.isNotEmpty) {
+      debugPrint('AmplifyConfigLoader: using fallback configuration');
+      return fallbackConfig;
+    }
+
+    return null;
   }
 
   /// Performs validation and comment stripping on [config]. The returned

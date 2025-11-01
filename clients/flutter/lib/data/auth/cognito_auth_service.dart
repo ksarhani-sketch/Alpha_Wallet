@@ -16,19 +16,23 @@ class AmplifyConfigValidationException implements Exception {
 }
 
 class CognitoAuthService {
-  CognitoAuthService({AmplifyAuthCognito? authPlugin, AmplifyClass? amplify})
-      : _amplify = amplify ?? Amplify,
+  CognitoAuthService({
+    AmplifyAuthCognito? authPlugin,
+    AmplifyClass? amplify,
+    AmplifyConfigLoader? configLoader,
+  })  : _amplify = amplify ?? Amplify,
         _authPlugin = authPlugin,
         _pluginFactory = authPlugin != null
             ? (() => authPlugin)
             : AmplifyAuthCognito.new,
-        _usesInjectedPlugin = authPlugin != null;
+        _usesInjectedPlugin = authPlugin != null,
+        _configLoader = configLoader ?? const AmplifyConfigLoader();
 
   final AmplifyClass _amplify;
   AmplifyAuthCognito? _authPlugin;
   final AmplifyAuthCognito Function() _pluginFactory;
   final bool _usesInjectedPlugin;
-  final AmplifyConfigLoader _configLoader = const AmplifyConfigLoader();
+  final AmplifyConfigLoader _configLoader;
 
   Future<void>? _configureFuture;
   bool _pluginAdded = false;
