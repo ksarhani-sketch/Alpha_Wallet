@@ -18,14 +18,22 @@ class AmplifyConfigValidationException implements Exception {
 class CognitoAuthService {
   CognitoAuthService({AmplifyAuthCognito? authPlugin, AmplifyClass? amplify})
       : _amplify = amplify ?? Amplify,
-        _authPlugin = authPlugin ?? AmplifyAuthCognito();
+        _authPlugin = authPlugin,
+        _pluginFactory = authPlugin != null
+            ? (() => authPlugin)
+            : AmplifyAuthCognito.new,
+        _usesInjectedPlugin = authPlugin != null;
 
   final AmplifyClass _amplify;
-  final AmplifyAuthCognito _authPlugin;
+  AmplifyAuthCognito? _authPlugin;
+  final AmplifyAuthCognito Function() _pluginFactory;
+  final bool _usesInjectedPlugin;
   final AmplifyConfigLoader _configLoader = const AmplifyConfigLoader();
 
   Future<void>? _configureFuture;
   bool _pluginAdded = false;
+
+  AmplifyAuthCognito get _plugin => _authPlugin ??= _pluginFactory();
 
   Future<void> ensureConfigured() {
     _configureFuture ??= _configure();
@@ -43,17 +51,25 @@ class CognitoAuthService {
         _pluginAdded = false;
       }
     }
+    _authPlugin = _usesInjectedPlugin ? _pluginFactory() : null;
   }
 
   Future<void> _configure() async {
     try {
       if (!_pluginAdded) {
         // v2: no generic parameter here
-        await _amplify.addPlugin(_authPlugin);
+        await _amplify.addPlugin(_plugin);
         _pluginAdded = true;
       }
     } on AmplifyAlreadyConfiguredException {
       _pluginAdded = true;
+    } on AmplifyException catch (error, stackTrace) {
+      if (_isPluginAlreadyAddedError(error)) {
+        _pluginAdded = true;
+      } else {
+        debugPrint('CognitoAuthService: failed to add plugin $error\n$stackTrace');
+        rethrow;
+      }
     }
 
     if (_amplify.isConfigured) return;
@@ -75,7 +91,51 @@ class CognitoAuthService {
       debugPrint('CognitoAuthService: $warning');
     }
 
-    await _amplify.configure(validation.config);
+    await _configureAmplify(validation.config);
+  }
+
+  Future<void> _configureAmplify(String config) async {
+    try {
+      await _amplify.configure(config);
+    } on AmplifyAlreadyConfiguredException {
+      // Safe to ignore – configuration is already in place.
+    } on AmplifyException catch (error, stackTrace) {
+      if (_isPluginNotAddedError(error)) {
+        debugPrint(
+            'CognitoAuthService: auth plugin missing during configure, retrying…');
+        _pluginAdded = false;
+        try {
+          await _amplify.addPlugin(_plugin);
+          _pluginAdded = true;
+        } on AmplifyException catch (addError, addStackTrace) {
+          if (_isPluginAlreadyAddedError(addError)) {
+            _pluginAdded = true;
+          } else {
+            debugPrint(
+                'CognitoAuthService: retry add plugin failed $addError\n$addStackTrace');
+            rethrow;
+          }
+        }
+        try {
+          await _amplify.configure(config);
+        } on AmplifyAlreadyConfiguredException {
+          // Another caller beat us to configuration – safe to proceed.
+        }
+      } else {
+        debugPrint('CognitoAuthService: configure failed $error\n$stackTrace');
+        rethrow;
+      }
+    }
+  }
+
+  bool _isPluginAlreadyAddedError(AmplifyException error) {
+    final message = error.message.toLowerCase();
+    return message.contains('has already been added');
+  }
+
+  bool _isPluginNotAddedError(AmplifyException error) {
+    final message = error.message.toLowerCase();
+    return message.contains('has not been added');
   }
 
   Future<CognitoAuthSession> _fetchSession({bool forceRefresh = false}) async {
