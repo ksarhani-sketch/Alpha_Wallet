@@ -51,26 +51,11 @@ class CognitoAuthService {
         _pluginAdded = false;
       }
     }
-    _authPlugin = _usesInjectedPlugin ? _pluginFactory() : null;
+    _resetCachedPluginInstance();
   }
 
   Future<void> _configure() async {
-    try {
-      if (!_pluginAdded) {
-        // v2: no generic parameter here
-        await _amplify.addPlugin(_plugin);
-        _pluginAdded = true;
-      }
-    } on AmplifyAlreadyConfiguredException {
-      _pluginAdded = true;
-    } on AmplifyException catch (error, stackTrace) {
-      if (_isPluginAlreadyAddedError(error)) {
-        _pluginAdded = true;
-      } else {
-        debugPrint('CognitoAuthService: failed to add plugin $error\n$stackTrace');
-        rethrow;
-      }
-    }
+    await _addPluginIfNeeded();
 
     if (_amplify.isConfigured) return;
 
@@ -104,17 +89,13 @@ class CognitoAuthService {
         debugPrint(
             'CognitoAuthService: auth plugin missing during configure, retrying…');
         _pluginAdded = false;
+        _resetCachedPluginInstance();
         try {
-          await _amplify.addPlugin(_plugin);
-          _pluginAdded = true;
+          await _addPluginIfNeeded();
         } on AmplifyException catch (addError, addStackTrace) {
-          if (_isPluginAlreadyAddedError(addError)) {
-            _pluginAdded = true;
-          } else {
-            debugPrint(
-                'CognitoAuthService: retry add plugin failed $addError\n$addStackTrace');
-            rethrow;
-          }
+          debugPrint(
+              'CognitoAuthService: retry add plugin failed $addError\n$addStackTrace');
+          rethrow;
         }
         try {
           await _amplify.configure(config);
@@ -136,6 +117,60 @@ class CognitoAuthService {
   bool _isPluginNotAddedError(AmplifyException error) {
     final message = error.message.toLowerCase();
     return message.contains('has not been added');
+  }
+
+  bool _isPluginInstanceClosedError(AmplifyException error) {
+    final message = error.message.toLowerCase();
+    return message.contains('cannot add event after closing');
+  }
+
+  void _resetCachedPluginInstance() {
+    if (_usesInjectedPlugin) {
+      _authPlugin = _pluginFactory();
+    } else {
+      _authPlugin = null;
+    }
+  }
+
+  Future<void> _addPluginIfNeeded() async {
+    if (_pluginAdded) return;
+    try {
+      await _amplify.addPlugin(_plugin);
+      _pluginAdded = true;
+      return;
+    } on AmplifyAlreadyConfiguredException {
+      _pluginAdded = true;
+      return;
+    } on AmplifyException catch (error, stackTrace) {
+      if (_isPluginAlreadyAddedError(error)) {
+        _pluginAdded = true;
+        return;
+      }
+      if (_isPluginInstanceClosedError(error) && !_usesInjectedPlugin) {
+        debugPrint(
+            'CognitoAuthService: cached plugin instance unavailable, recreating…');
+        _authPlugin = null;
+        try {
+          await _amplify.addPlugin(_plugin);
+          _pluginAdded = true;
+          return;
+        } on AmplifyAlreadyConfiguredException {
+          _pluginAdded = true;
+          return;
+        } on AmplifyException catch (retryError, retryStackTrace) {
+          if (_isPluginAlreadyAddedError(retryError)) {
+            _pluginAdded = true;
+            return;
+          }
+          debugPrint('CognitoAuthService: retry add plugin failed '
+              '$retryError\n$retryStackTrace');
+          rethrow;
+        }
+      }
+      debugPrint('CognitoAuthService: failed to add plugin '
+          '$error\n$stackTrace');
+      rethrow;
+    }
   }
 
   Future<CognitoAuthSession> _fetchSession({bool forceRefresh = false}) async {
