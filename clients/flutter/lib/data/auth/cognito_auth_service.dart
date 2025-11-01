@@ -48,7 +48,7 @@ class CognitoAuthService {
   Future<void> _configure() async {
     try {
       if (!_pluginAdded) {
-        // ✅ Do NOT provide a generic type parameter here.
+        // v2: no generic parameter here
         await _amplify.addPlugin(_authPlugin);
         _pluginAdded = true;
       }
@@ -122,8 +122,8 @@ class CognitoAuthService {
       final session = await _fetchSession(forceRefresh: forceRefresh);
       if (!session.isSignedIn) return null;
 
-      // In amplify_auth_cognito 1.x, idToken is a JsonWebToken. Return its raw string.
-      final tokens = session.userPoolTokens;
+      // Amplify Auth v2: tokens exposed via Result wrapper
+      final tokens = session.userPoolTokensResult.valueOrNull;
       final jwt = tokens?.idToken;
       return jwt?.raw;
     } on SignedOutException {
