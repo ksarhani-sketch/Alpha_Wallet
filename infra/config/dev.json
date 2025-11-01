@@ -1,1 +1,14 @@
-{ "account": "111111111111", "region": "me-south-1", "branch": "dev", "repo": {"owner":"YOUR_GH","name":"codex","oauthSecretArn":"/codex/github/token"}, "tags": {"project":"codex","env":"dev"} }
+{
+  "account": "084828567713",
+  "region": "me-south-1",
+  "branch": "main",
+  "repo": {
+    "owner": "ksarhani-sketch",
+    "name": "Alpha_Wallet",
+    "oauthSecretArn": ""
+  },
+  "tags": {
+    "App": "Alphwallet",
+    "Env": "dev"
+  }
+}
