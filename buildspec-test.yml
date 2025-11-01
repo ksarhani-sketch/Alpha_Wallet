@@ -2,22 +2,29 @@ version: 0.2
 
 env:
   variables:
-    FLUTTER_SDK_URL: https://storage.googleapis.com/flutter_infra_release/releases/stable/linux/flutter_linux_3.24.3-stable.tar.xz
+    CI: "true"
+
+cache:
+  paths:
+    - /root/.pub-cache
+    - flutter/bin/cache
 
 phases:
   install:
     commands:
       - set -e
       - echo "=== Install base packages ==="
+      - export DEBIAN_FRONTEND=noninteractive
       - apt-get update -y
       - apt-get install -y curl git unzip xz-utils libglu1-mesa
-      - echo "=== Download & setup Flutter SDK ==="
-      - curl -L -o flutter.tar.xz "$FLUTTER_SDK_URL"
-      - tar -xf flutter.tar.xz
+      - echo "=== Download & setup Flutter SDK (latest stable via git) ==="
+      - git clone -b stable https://github.com/flutter/flutter.git
       - export PATH="$PWD/flutter/bin:$PATH"
       - git config --global --add safe.directory "$PWD/flutter"
-      - flutter --version || true
+      - flutter --disable-analytics || true
       - flutter config --enable-web || true
+      - flutter --version
+      - dart --version
 
       - echo "=== Locate Flutter app directory ==="
       - |
@@ -51,7 +58,6 @@ phases:
           (cd "$APP_DIR" && flutter test --coverage)
         else
           echo "No test directory at $APP_DIR/test — skipping tests"
-          # Do not fail the build on infos/warnings:
           (cd "$APP_DIR" && flutter analyze --no-fatal-infos --no-fatal-warnings) || true
         fi
 
