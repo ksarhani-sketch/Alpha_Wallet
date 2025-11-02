@@ -56,11 +56,16 @@ class CognitoAuthService {
   AuthPluginInterface get _plugin => _authPlugin ??= _pluginFactory();
 
   Future<void> ensureConfigured() {
-    _configureFuture ??= _configure().catchError((Object error, StackTrace stackTrace) {
+    return _configureFuture ??= _configureWithRetryReset();
+  }
+
+  Future<void> _configureWithRetryReset() async {
+    try {
+      await _configure();
+    } catch (Object error, StackTrace stackTrace) {
       _configureFuture = null;
-      return Future<void>.error(error, stackTrace);
-    });
-    return _configureFuture!;
+      Error.throwWithStackTrace(error, stackTrace);
+    }
   }
 
   Future<void> reset() async {
