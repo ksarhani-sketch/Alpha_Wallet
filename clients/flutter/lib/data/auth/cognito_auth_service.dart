@@ -1,6 +1,9 @@
 import 'dart:async';
 
-import 'package:amplify_auth_cognito/amplify_auth_cognito.dart';
+import 'package:amplify_auth_cognito/amplify_auth_cognito.dart'
+    as amplify_auth_cognito;
+import 'package:amplify_auth_cognito_dart/amplify_auth_cognito_dart.dart'
+    as amplify_auth_cognito_dart;
 import 'package:amplify_flutter/amplify_flutter.dart';
 import 'package:flutter/foundation.dart';
 
@@ -17,27 +20,40 @@ class AmplifyConfigValidationException implements Exception {
 
 class CognitoAuthService {
   CognitoAuthService({
-    AmplifyAuthCognito? authPlugin,
+    AuthPluginInterface? authPlugin,
     AmplifyClass? amplify,
     AmplifyConfigLoader? configLoader,
   })  : _amplify = amplify ?? Amplify,
         _authPlugin = authPlugin,
         _pluginFactory = authPlugin != null
             ? (() => authPlugin)
-            : AmplifyAuthCognito.new,
+            : CognitoAuthService._createDefaultPlugin,
         _usesInjectedPlugin = authPlugin != null,
         _configLoader = configLoader ?? const AmplifyConfigLoader();
 
   final AmplifyClass _amplify;
-  AmplifyAuthCognito? _authPlugin;
-  final AmplifyAuthCognito Function() _pluginFactory;
+  AuthPluginInterface? _authPlugin;
+  final AuthPluginInterface Function() _pluginFactory;
   final bool _usesInjectedPlugin;
   final AmplifyConfigLoader _configLoader;
 
   Future<void>? _configureFuture;
   bool _pluginAdded = false;
 
-  AmplifyAuthCognito get _plugin => _authPlugin ??= _pluginFactory();
+  static AuthPluginInterface _createDefaultPlugin() {
+    if (kIsWeb) {
+      return amplify_auth_cognito_dart.AmplifyAuthCognitoDart();
+    }
+
+    switch (defaultTargetPlatform) {
+      case TargetPlatform.windows:
+        return amplify_auth_cognito_dart.AmplifyAuthCognitoDart();
+      default:
+        return amplify_auth_cognito.AmplifyAuthCognito();
+    }
+  }
+
+  AuthPluginInterface get _plugin => _authPlugin ??= _pluginFactory();
 
   Future<void> ensureConfigured() {
     _configureFuture ??= _configure().catchError((Object error, StackTrace stackTrace) {
