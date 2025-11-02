@@ -6,8 +6,9 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  amplify_auth_cognito: ^2.7.0
-  amplify_flutter: ^2.7.0
+  amplify_auth_cognito: ^2.11.0
+  amplify_auth_cognito_dart: ^2.11.0
+  amplify_flutter: ^2.11.0
   equatable: ^2.0.5
   http: ^1.2.2
   intl: ^0.20.2
