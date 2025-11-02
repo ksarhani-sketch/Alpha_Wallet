@@ -6,11 +6,6 @@ dependencies:
     sdk: flutter
   flutter_localizations:
     sdk: flutter
-  # Amplify Flutter packages – use current versions that exist on pub.dev
-  amplify_flutter: ^2.7.0
-  amplify_auth_cognito: ^2.7.0
-  # Optional: include the Dart‑only plugin for web if your app targets web
-  amplify_auth_cognito_dart: ^0.11.14
   equatable: ^2.0.5
   http: ^1.2.2
   intl: ^0.20.2
@@ -24,5 +19,3 @@ dev_dependencies:
   flutter_lints: ^5.0.0
 flutter:
   uses-material-design: true
-  assets:
-    - amplifyconfiguration.json

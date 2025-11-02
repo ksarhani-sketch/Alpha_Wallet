@@ -8,11 +8,6 @@ servers:
       host:
         default: api.example.com
 components:
-  securitySchemes:
-    CognitoUserPool:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
   schemas:
     Error:
       type: object
@@ -136,8 +131,6 @@ paths:
   /accounts:
     get:
       summary: List accounts
-      security:
-        - CognitoUserPool: []
       responses:
         '200':
           description: A collection of accounts
@@ -147,11 +140,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Account'
-        '401': { $ref: '#/components/schemas/Error' }
     post:
       summary: Create account
-      security:
-        - CognitoUserPool: []
       requestBody:
         required: true
         content:
@@ -193,8 +183,6 @@ paths:
           type: string
     get:
       summary: Fetch a single account
-      security:
-        - CognitoUserPool: []
       responses:
         '200':
           description: Account details
@@ -205,8 +193,6 @@ paths:
         '404': { description: Not found }
     put:
       summary: Update an account
-      security:
-        - CognitoUserPool: []
       requestBody:
         required: true
         content:
@@ -230,16 +216,12 @@ paths:
         '404': { description: Not found }
     delete:
       summary: Delete an account
-      security:
-        - CognitoUserPool: []
       responses:
         '204': { description: Deleted }
         '409': { description: Account has related transactions }
   /categories:
     get:
       summary: List categories
-      security:
-        - CognitoUserPool: []
       responses:
         '200':
           description: Category list
@@ -251,8 +233,6 @@ paths:
                   $ref: '#/components/schemas/Category'
     post:
       summary: Create category
-      security:
-        - CognitoUserPool: []
       requestBody:
         required: true
         content:
@@ -281,8 +261,6 @@ paths:
           type: string
     get:
       summary: Fetch a category
-      security:
-        - CognitoUserPool: []
       responses:
         '200':
           description: Category details
@@ -293,8 +271,6 @@ paths:
         '404': { description: Not found }
     put:
       summary: Update category
-      security:
-        - CognitoUserPool: []
       requestBody:
         required: true
         content:
@@ -315,16 +291,12 @@ paths:
                 $ref: '#/components/schemas/Category'
     delete:
       summary: Delete category
-      security:
-        - CognitoUserPool: []
       responses:
         '204': { description: Deleted }
         '409': { description: Category has related transactions }
   /transactions:
     get:
       summary: List transactions
-      security:
-        - CognitoUserPool: []
       parameters:
         - in: query
           name: from
@@ -347,8 +319,6 @@ paths:
                   $ref: '#/components/schemas/Transaction'
     post:
       summary: Create transaction
-      security:
-        - CognitoUserPool: []
       requestBody:
         required: true
         content:
@@ -384,8 +354,6 @@ paths:
           type: string
     get:
       summary: Fetch a transaction
-      security:
-        - CognitoUserPool: []
       responses:
         '200':
           description: Transaction detail
@@ -396,8 +364,6 @@ paths:
         '404': { description: Not found }
     put:
       summary: Update a transaction
-      security:
-        - CognitoUserPool: []
       requestBody:
         required: true
         content:
@@ -424,15 +390,11 @@ paths:
                 $ref: '#/components/schemas/Transaction'
     delete:
       summary: Delete transaction
-      security:
-        - CognitoUserPool: []
       responses:
         '204': { description: Deleted }
   /budgets:
     get:
       summary: List budgets
-      security:
-        - CognitoUserPool: []
       parameters:
         - in: query
           name: month
@@ -450,8 +412,6 @@ paths:
                   $ref: '#/components/schemas/Budget'
     post:
       summary: Create or replace a budget
-      security:
-        - CognitoUserPool: []
       requestBody:
         required: true
         content:
@@ -488,8 +448,6 @@ paths:
           pattern: "^\\d{4}-(0[1-9]|1[0-2])$"
     get:
       summary: List budgets for a given month
-      security:
-        - CognitoUserPool: []
       responses:
         '200':
           description: Budgets for the month
@@ -515,8 +473,6 @@ paths:
           description: Use "all" for an overall budget with no category
     get:
       summary: Fetch a specific budget entry
-      security:
-        - CognitoUserPool: []
       responses:
         '200':
           description: Budget entry
@@ -527,8 +483,6 @@ paths:
         '404': { description: Not found }
     put:
       summary: Update a budget entry
-      security:
-        - CognitoUserPool: []
       requestBody:
         required: true
         content:
@@ -549,15 +503,11 @@ paths:
                 $ref: '#/components/schemas/Budget'
     delete:
       summary: Delete a budget entry
-      security:
-        - CognitoUserPool: []
       responses:
         '204': { description: Deleted }
   /attachments/presign:
     post:
       summary: Request a pre-signed upload URL for attachments
-      security:
-        - CognitoUserPool: []
       requestBody:
         required: true
         content:
@@ -585,5 +535,3 @@ paths:
                   expiresInSeconds: { type: integer }
                   bucket: { type: string }
         '400': { description: Validation error }
-security:
-  - CognitoUserPool: []
