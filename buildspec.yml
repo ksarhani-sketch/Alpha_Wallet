@@ -10,31 +10,31 @@ cache:
 phases:
   install:
     commands:
-      - "set -euo pipefail"
-      - "echo 'Installing latest Flutter stable via git'"
-      - "git clone -b stable https://github.com/flutter/flutter.git"
-      - "export PATH=$PWD/flutter/bin:$PATH"
-      - "git config --global --add safe.directory $PWD/flutter"
-      - "flutter --version"                    # verify Dart is >= 3.7.x
-      - "flutter config --enable-web"
-      - "flutter precache --web"
-      - "echo 'Checking project layout'"
-      - "test -f clients/flutter/pubspec.yaml || { echo 'ERROR: missing clients/flutter/pubspec.yaml'; exit 1; }"
-      - "bash -lc 'test -f clients/flutter/web/index.html || (cd clients/flutter && flutter create --platforms=web .)'"
-      - "bash -lc 'cd clients/flutter && flutter pub get'"
+      - set -euo pipefail
+      - echo 'Installing latest Flutter stable via git'
+      - git clone -b stable https://github.com/flutter/flutter.git
+      - export PATH="$PWD/flutter/bin:$PATH"
+      - git config --global --add safe.directory "$PWD/flutter"
+      - flutter --version
+      - flutter config --enable-web
+      - flutter precache --web
+      - echo 'Checking project layout'
+      - test -f clients/flutter/pubspec.yaml || { echo 'ERROR: missing clients/flutter/pubspec.yaml'; exit 1; }
+      - bash -lc 'test -f clients/flutter/web/index.html || (cd clients/flutter && flutter create --platforms=web .)'
+      - bash -lc 'cd clients/flutter && flutter pub get'
 
   build:
     commands:
-      - "echo 'Building Flutter Web - release'"
-      - "bash -lc 'cd clients/flutter && flutter build web --release --verbose'"
+      - echo 'Building Flutter Web - release (no service worker)'
+      - bash -lc 'cd clients/flutter && flutter build web --release --pwa-strategy=none --verbose'
 
   post_build:
     commands:
-      - "echo 'Verifying artifact'"
-      - "test -f clients/flutter/build/web/index.html || { echo 'ERROR: web build output missing'; exit 2; }"
-      - "du -sh clients/flutter/build/web || true"
+      - echo 'Verifying artifact'
+      - test -f clients/flutter/build/web/index.html || { echo 'ERROR: web build output missing'; exit 2; }
+      - du -sh clients/flutter/build/web || true
 
 artifacts:
   base-directory: clients/flutter/build/web
   files:
-    - "**/*"
+    - '**/*'
