@@ -77,10 +77,10 @@ class CognitoAuthService {
   Future<void> _configureWithRetryReset() async {
     try {
       await _configure();
-    } catch (Object error, StackTrace stackTrace) {
+    } catch (error, stackTrace) {
       // Reset the cached future so that subsequent callers can retry
       _configureFuture = null;
-      Error.throwWithStackTrace(error, stackTrace);
+      Error.throwWithStackTrace(error, stackTrace as StackTrace);
     }
   }
 
