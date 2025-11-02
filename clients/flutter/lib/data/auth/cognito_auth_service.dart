@@ -40,7 +40,10 @@ class CognitoAuthService {
   AmplifyAuthCognito get _plugin => _authPlugin ??= _pluginFactory();
 
   Future<void> ensureConfigured() {
-    _configureFuture ??= _configure();
+    _configureFuture ??= _configure().catchError((Object error, StackTrace stackTrace) {
+      _configureFuture = null;
+      return Future<void>.error(error, stackTrace);
+    });
     return _configureFuture!;
   }
 
