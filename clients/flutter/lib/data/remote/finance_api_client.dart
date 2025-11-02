@@ -37,6 +37,7 @@ class FinanceApiClient {
   final http.Client _client;
   final Uri? _baseUri;
   final Future<String?> Function()? tokenProvider;
+  String? _lastAuthToken;
 
   bool get isEnabled => _baseUri != null;
   bool get hasAuthProvider => tokenProvider != null;
@@ -61,11 +62,40 @@ class FinanceApiClient {
     final headers = <String, String>{'Content-Type': 'application/json'};
     if (tokenProvider != null) {
       final token = await tokenProvider!();
-      if (token != null && token.isNotEmpty) {
-        headers['Authorization'] = 'Bearer $token';
+      final trimmedToken = token?.trim();
+      if (trimmedToken != null && trimmedToken.isNotEmpty) {
+        _lastAuthToken = trimmedToken;
+        headers['Authorization'] = 'Bearer $trimmedToken';
+      } else {
+        _lastAuthToken = null;
       }
+    } else {
+      _lastAuthToken = null;
     }
     return headers;
+  }
+
+  String? get _authenticatedUserId {
+    final token = _lastAuthToken;
+    if (token == null || token.isEmpty) {
+      return null;
+    }
+    final segments = token.split('.');
+    if (segments.length < 2) {
+      return null;
+    }
+    try {
+      final normalized = base64Url.normalize(segments[1]);
+      final payload = utf8.decode(base64Url.decode(normalized));
+      final decoded = jsonDecode(payload);
+      final sub = decoded is Map<String, dynamic> ? decoded['sub'] : null;
+      if (sub is String && sub.trim().isNotEmpty) {
+        return sub;
+      }
+    } catch (_) {
+      // Ignore decoding errors and fall back to null.
+    }
+    return null;
   }
 
   Future<dynamic> _request(
@@ -160,7 +190,7 @@ class FinanceApiClient {
     }
 
     final settings = UserSettings(
-      userId: 'remote-user',
+      userId: _authenticatedUserId ?? 'unknown-user',
       primaryCurrency: primaryCurrency,
       locale: 'en',
       syncEnabled: true,

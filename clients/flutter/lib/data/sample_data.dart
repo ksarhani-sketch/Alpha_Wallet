@@ -219,7 +219,7 @@ FinanceState buildSampleState() {
     budgets: budgets,
     recurringTemplates: recurring,
     settings: const UserSettings(
-      userId: 'demo-user',
+      userId: 'local-sample-user',
       primaryCurrency: 'USD',
       locale: 'en',
       premium: true,

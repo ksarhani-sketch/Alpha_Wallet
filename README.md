@@ -32,5 +32,5 @@ Use `sam local` or invoke deployed API URL from API Gateway console.
 
 ## Notes
 
-* Cognito authorizer wiring is mocked as `demo-user` in handlers; add a Cognito Authorizer on API Gateway for real auth.
+* API Gateway enforces a Cognito authorizer; ensure clients attach valid user pool tokens in the `Authorization` header.
 * DynamoDB keys are simplified for the prototype. For production, add GSIs for byAccount/byCategory queries and write capacity alarms.
