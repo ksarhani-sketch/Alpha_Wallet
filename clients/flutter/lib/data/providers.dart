@@ -3,22 +3,13 @@ import 'dart:math';
 import 'package:collection/collection.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'auth/auth_state.dart';
-import 'auth/providers.dart';
 import 'finance_repository.dart';
 import 'finance_state.dart';
 import 'models/models.dart';
 import 'remote/finance_api_client.dart';
 
 final financeApiClientProvider = Provider<FinanceApiClient>((ref) {
-  final authState = ref.watch(authControllerProvider);
-  final authNotifier = ref.read(authControllerProvider.notifier);
-  Future<String?> Function()? tokenProvider;
-  if (authState.status == AuthStatus.signedIn) {
-    tokenProvider = () => authNotifier.refreshedToken();
-  }
-
-  final client = FinanceApiClient(tokenProvider: tokenProvider);
+  final client = FinanceApiClient();
   ref.onDispose(client.close);
   return client;
 });

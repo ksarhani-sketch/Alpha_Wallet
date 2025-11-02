@@ -190,7 +190,7 @@ class FinanceApiClient {
     }
 
     final settings = UserSettings(
-      userId: _authenticatedUserId ?? 'unknown-user',
+      userId: _authenticatedUserId ?? 'demo-user',
       primaryCurrency: primaryCurrency,
       locale: 'en',
       syncEnabled: true,

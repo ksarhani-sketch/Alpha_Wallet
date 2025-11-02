@@ -14,10 +14,12 @@ export const jsonResponse = (statusCode: number, body: unknown) => ({
 
 export const requireUserId = (event: APIGatewayProxyEventV2): string => {
   const userId = event.requestContext.authorizer?.jwt?.claims?.sub;
-  if (!userId || typeof userId !== 'string' || userId.trim().length === 0) {
-    throw new HttpError(401, 'Missing or invalid authentication context');
+  if (typeof userId === 'string' && userId.trim().length > 0) {
+    return userId;
   }
-  return userId;
+
+  // Demo mode fallback — all requests share the same sandbox user.
+  return 'demo-user';
 };
 
 export const parseJson = <T>(body: string | null | undefined): T => {

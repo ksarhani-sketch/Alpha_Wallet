@@ -1,26 +1,16 @@
 import { Duration, Stack } from 'aws-cdk-lib';
-import {
-  RestApi,
-  LambdaIntegration,
-  Cors,
-  CognitoUserPoolsAuthorizer,
-  AuthorizationType,
-  AccessLogFormat,
-  MethodLoggingLevel,
-  LogGroupLogDestination,
-} from 'aws-cdk-lib/aws-apigateway';
+import { RestApi, LambdaIntegration, Cors, AccessLogFormat, MethodLoggingLevel, LogGroupLogDestination } from 'aws-cdk-lib/aws-apigateway';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import { Runtime } from 'aws-cdk-lib/aws-lambda';
 import { Effect, PolicyStatement } from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 import { LogGroup, RetentionDays } from 'aws-cdk-lib/aws-logs';
 import type { CoreStack } from './core-stack.js';
-import type { AuthStack } from './auth-stack.js';
 
 export class ApiStack extends Stack {
   readonly api: RestApi;
 
-  constructor(scope: Construct, id: string, props: { env: any; core: CoreStack; auth: AuthStack }) {
+  constructor(scope: Construct, id: string, props: { env: any; core: CoreStack }) {
     super(scope, id, props);
 
     const accessLogs = new LogGroup(this, 'ApiAccessLogs', {
@@ -95,59 +85,47 @@ export class ApiStack extends Stack {
     const presign = mkFn('presign.ts');
     grant(presign);
 
-    const authorizer = new CognitoUserPoolsAuthorizer(this, 'ApiAuthorizer', {
-      cognitoUserPools: [props.auth.pool],
-      identitySource: 'method.request.header.Authorization',
-    });
-
-    const methodOptions = {
-      authorizer,
-      authorizationType: AuthorizationType.COGNITO,
-    } as const;
-
     const v1 = this.api.root.addResource('v1');
 
     const transactionsResource = v1.addResource('transactions');
     const transactionIntegration = new LambdaIntegration(transactions);
-    transactionsResource.addMethod('GET', transactionIntegration, methodOptions);
-    transactionsResource.addMethod('POST', transactionIntegration, methodOptions);
+    transactionsResource.addMethod('GET', transactionIntegration);
+    transactionsResource.addMethod('POST', transactionIntegration);
     const transactionItem = transactionsResource.addResource('{txnId}');
-    transactionItem.addMethod('GET', transactionIntegration, methodOptions);
-    transactionItem.addMethod('PUT', transactionIntegration, methodOptions);
-    transactionItem.addMethod('DELETE', transactionIntegration, methodOptions);
+    transactionItem.addMethod('GET', transactionIntegration);
+    transactionItem.addMethod('PUT', transactionIntegration);
+    transactionItem.addMethod('DELETE', transactionIntegration);
 
     const accountsResource = v1.addResource('accounts');
     const accountIntegration = new LambdaIntegration(accounts);
-    accountsResource.addMethod('GET', accountIntegration, methodOptions);
-    accountsResource.addMethod('POST', accountIntegration, methodOptions);
+    accountsResource.addMethod('GET', accountIntegration);
+    accountsResource.addMethod('POST', accountIntegration);
     const accountItem = accountsResource.addResource('{accountId}');
-    accountItem.addMethod('GET', accountIntegration, methodOptions);
-    accountItem.addMethod('PUT', accountIntegration, methodOptions);
-    accountItem.addMethod('DELETE', accountIntegration, methodOptions);
+    accountItem.addMethod('GET', accountIntegration);
+    accountItem.addMethod('PUT', accountIntegration);
+    accountItem.addMethod('DELETE', accountIntegration);
 
     const categoriesResource = v1.addResource('categories');
     const categoryIntegration = new LambdaIntegration(categories);
-    categoriesResource.addMethod('GET', categoryIntegration, methodOptions);
-    categoriesResource.addMethod('POST', categoryIntegration, methodOptions);
+    categoriesResource.addMethod('GET', categoryIntegration);
+    categoriesResource.addMethod('POST', categoryIntegration);
     const categoryItem = categoriesResource.addResource('{categoryId}');
-    categoryItem.addMethod('GET', categoryIntegration, methodOptions);
-    categoryItem.addMethod('PUT', categoryIntegration, methodOptions);
-    categoryItem.addMethod('DELETE', categoryIntegration, methodOptions);
+    categoryItem.addMethod('GET', categoryIntegration);
+    categoryItem.addMethod('PUT', categoryIntegration);
+    categoryItem.addMethod('DELETE', categoryIntegration);
 
     const budgetsResource = v1.addResource('budgets');
     const budgetIntegration = new LambdaIntegration(budgets);
-    budgetsResource.addMethod('GET', budgetIntegration, methodOptions);
-    budgetsResource.addMethod('POST', budgetIntegration, methodOptions);
+    budgetsResource.addMethod('GET', budgetIntegration);
+    budgetsResource.addMethod('POST', budgetIntegration);
     const budgetMonth = budgetsResource.addResource('{month}');
-    budgetMonth.addMethod('GET', budgetIntegration, methodOptions);
+    budgetMonth.addMethod('GET', budgetIntegration);
     const budgetEntry = budgetMonth.addResource('{categoryId}');
-    budgetEntry.addMethod('GET', budgetIntegration, methodOptions);
-    budgetEntry.addMethod('PUT', budgetIntegration, methodOptions);
-    budgetEntry.addMethod('DELETE', budgetIntegration, methodOptions);
+    budgetEntry.addMethod('GET', budgetIntegration);
+    budgetEntry.addMethod('PUT', budgetIntegration);
+    budgetEntry.addMethod('DELETE', budgetIntegration);
 
     const attachments = v1.addResource('attachments');
-    attachments
-      .addResource('presign')
-      .addMethod('POST', new LambdaIntegration(presign), methodOptions);
+    attachments.addResource('presign').addMethod('POST', new LambdaIntegration(presign));
   }
 }

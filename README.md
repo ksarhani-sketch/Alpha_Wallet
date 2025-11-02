@@ -32,5 +32,5 @@ Use `sam local` or invoke deployed API URL from API Gateway console.
 
 ## Notes
 
-* API Gateway enforces a Cognito authorizer; ensure clients attach valid user pool tokens in the `Authorization` header.
+* The demo API deploys without authentication; all requests operate against a shared sandbox user.
 * DynamoDB keys are simplified for the prototype. For production, add GSIs for byAccount/byCategory queries and write capacity alarms.
