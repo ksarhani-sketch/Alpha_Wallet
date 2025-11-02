@@ -21,7 +21,7 @@ class FinanceState {
             List<RecurringTemplate>.unmodifiable(recurringTemplates ?? const []),
         settings = settings ??
             const UserSettings(
-              userId: 'demo-user',
+              userId: 'local-sample-user',
               primaryCurrency: 'USD',
               locale: 'en',
             ),

@@ -33,7 +33,7 @@ class FinanceController extends StateNotifier<FinanceState> {
         budgets: const [],
         recurringTemplates: const [],
         settings: const models.UserSettings( // ← qualify
-          userId: 'remote-user',
+          userId: 'pending-auth',
           primaryCurrency: 'USD',
           locale: 'en',
         ),
