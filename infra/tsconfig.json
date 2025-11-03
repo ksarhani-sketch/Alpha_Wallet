@@ -1,7 +1,15 @@
+cat > tsconfig.json <<'EOF'
 {
-  "extends": "../tsconfig.base.json",
   "compilerOptions": {
-    "outDir": "dist"
+    "target": "ES2020",
+    "module": "CommonJS",
+    "moduleResolution": "Node",
+    "strict": true,
+    "esModuleInterop": true,
+    "skipLibCheck": true,
+    "outDir": "dist",
+    "rootDir": "."
   },
   "include": ["bin", "lib"]
 }
+EOF
