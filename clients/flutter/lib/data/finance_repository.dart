@@ -36,6 +36,7 @@ class FinanceController extends StateNotifier<FinanceState> {
           userId: 'pending-auth',
           primaryCurrency: 'USD',
           locale: 'en',
+          syncEnabled: true,
         ),
         fxRates: const {'USD': 1.0},
         lastSyncedAt: DateTime.fromMillisecondsSinceEpoch(0),

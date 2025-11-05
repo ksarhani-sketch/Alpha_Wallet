@@ -220,6 +220,7 @@ FinanceState buildSampleState() {
       userId: 'local-sample-user',
       primaryCurrency: 'USD',
       locale: 'en',
+      syncEnabled: true,
       premium: true,
       dailyReminderEnabled: true,
       appLockEnabled: true,
