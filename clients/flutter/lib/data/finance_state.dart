@@ -17,7 +17,7 @@ class FinanceState {
   final DateTime lastSyncedAt;
   final bool isSyncing;
 
-  const FinanceState({
+  FinanceState({
     this.categories = const [],
     this.wallets = const [],
     this.transactions = const [],
