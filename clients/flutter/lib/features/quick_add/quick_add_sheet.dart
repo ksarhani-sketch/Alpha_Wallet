@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/models.dart';
 import '../../data/providers.dart';
+import 'new_category_dialog.dart';
 
 class QuickAddSheet extends ConsumerStatefulWidget {
   const QuickAddSheet({super.key});
@@ -93,19 +94,40 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
                 const SizedBox(height: 16),
                 Text('Category', style: Theme.of(context).textTheme.labelLarge),
                 const SizedBox(height: 8),
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    for (final category in categories)
-                      ChoiceChip(
-                        label: Text(category.name),
-                        avatar: Icon(category.icon, size: 18),
-                        selected: _categoryId == category.id,
-                        onSelected: (_) => setState(() => _categoryId = category.id),
+                if (categories.isEmpty)
+                  Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                    child: OutlinedButton.icon(
+                      icon: const Icon(Icons.add),
+                      label: const Text('Add your first category'),
+                      onPressed: _isSubmitting ? null : _openNewCategoryDialog,
+                    ),
+                  )
+                else
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Wrap(
+                        spacing: 8,
+                        runSpacing: 8,
+                        children: [
+                          for (final category in categories)
+                            ChoiceChip(
+                              label: Text(category.name),
+                              avatar: Icon(category.icon, size: 18),
+                              selected: _categoryId == category.id,
+                              onSelected: (_) => setState(() => _categoryId = category.id),
+                            ),
+                        ],
                       ),
-                  ],
-                ),
+                      const SizedBox(height: 12),
+                      TextButton.icon(
+                        icon: const Icon(Icons.add),
+                        label: const Text('Add new category'),
+                        onPressed: _isSubmitting ? null : _openNewCategoryDialog,
+                      ),
+                    ],
+                  ),
                 const SizedBox(height: 16),
                 DropdownButtonFormField<String>(
                   value: _walletId,
@@ -172,6 +194,40 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
         ),
       ),
     );
+  }
+
+  Future<void> _openNewCategoryDialog() async {
+    final result = await showDialog<NewCategoryData>(
+      context: context,
+      builder: (context) => NewCategoryDialog(initialType: _categoryType),
+    );
+    if (result == null) return;
+
+    final controller = ref.read(financeControllerProvider.notifier);
+    try {
+      final created = await controller.createCategory(
+        name: result.name,
+        type: result.type,
+        color: result.color,
+        icon: result.icon,
+        budgetLimit: result.budgetLimit,
+        alertThreshold: result.alertThreshold,
+        rollover: result.rollover,
+      );
+      if (!mounted) return;
+      setState(() {
+        _categoryType = created.type;
+        _categoryId = created.id;
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Category "${created.name}" created.')),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Failed to create category: $error')),
+      );
+    }
   }
 
   Future<void> _submit() async {

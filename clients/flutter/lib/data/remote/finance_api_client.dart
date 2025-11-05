@@ -14,6 +14,29 @@ import '../models/wallet.dart';
 // NEW: alias import so we can qualify enums/constants safely.
 import '../models/models.dart' as models;
 
+const Map<String, IconData> _iconRegistry = {
+  'category': Icons.category,
+  'fastfood': Icons.fastfood,
+  'local_grocery_store': Icons.local_grocery_store,
+  'directions_bus': Icons.directions_bus,
+  'health_and_safety': Icons.health_and_safety,
+  'savings': Icons.savings,
+  'vaccines': Icons.vaccines,
+  'fitness_center': Icons.fitness_center,
+  'work': Icons.work,
+  'coffee': Icons.coffee,
+  'school': Icons.school,
+  'restaurant': Icons.restaurant,
+  'home_work': Icons.home_work,
+  'movie': Icons.movie,
+  'movie_outlined': Icons.movie_outlined,
+  'shopping_basket': Icons.shopping_basket,
+  'shopping_bag': Icons.shopping_bag,
+  'payments': Icons.payments,
+  'auto_graph': Icons.auto_graph,
+  'restaurant_menu': Icons.restaurant_menu,
+};
+
 class FinanceApiException implements Exception {
   FinanceApiException(this.statusCode, this.message);
 
@@ -231,6 +254,50 @@ class FinanceApiClient {
     await _request('DELETE', '/transactions/$txnId');
   }
 
+  Future<Category> createCategory({
+    required String name,
+    required models.CategoryType type,
+    required Color color,
+    required IconData icon,
+  }) async {
+    final body = <String, dynamic>{
+      'name': name,
+      'type': type == models.CategoryType.income ? 'income' : 'expense',
+      'color': _colorToHex(color),
+      'icon': _iconNameFor(icon),
+    };
+    final response = await _request('POST', '/categories', body: body);
+    if (response is Map<String, dynamic>) {
+      return _mapCategory(response);
+    }
+    return Category(
+      id: '',
+      name: name,
+      type: type == models.CategoryType.income ? CategoryType.income : CategoryType.expense,
+      color: color,
+      icon: icon,
+    );
+  }
+
+  Future<void> createBudget({
+    required String month,
+    required String currency,
+    required double limit,
+    String? categoryId,
+    double? alertThreshold,
+    bool rollover = false,
+  }) async {
+    final body = <String, dynamic>{
+      'month': month,
+      'currency': currency.toUpperCase(),
+      'limit': limit,
+      if (categoryId != null) 'categoryId': categoryId,
+      if (alertThreshold != null) 'alertThreshold': alertThreshold,
+      'rollover': rollover,
+    };
+    await _request('POST', '/budgets', body: body);
+  }
+
   Wallet _mapAccount(Map<String, dynamic> json) {
     final type = switch ((json['type'] as String? ?? 'cash').toLowerCase()) {
       'bank' => WalletType.bank,
@@ -255,12 +322,13 @@ class FinanceApiClient {
         ? CategoryType.income
         : CategoryType.expense;
     final color = _parseColor(json['color'] as String?);
+    final icon = _iconFromName(json['icon'] as String?);
     return Category(
       id: json['categoryId'] as String? ?? '',
       name: json['name'] as String? ?? 'Category',
       type: type,
       color: color,
-      icon: Icons.category,
+      icon: icon,
     );
   }
 
@@ -319,5 +387,26 @@ class FinanceApiClient {
       return Colors.blueGrey;
     }
     return Color(value);
+  }
+
+  String _iconNameFor(IconData icon) {
+    for (final entry in _iconRegistry.entries) {
+      if (entry.value == icon) {
+        return entry.key;
+      }
+    }
+    return 'category';
+  }
+
+  IconData _iconFromName(String? name) {
+    if (name == null || name.isEmpty) {
+      return Icons.category;
+    }
+    return _iconRegistry[name] ?? Icons.category;
+  }
+
+  String _colorToHex(Color color) {
+    final rgb = color.value & 0x00FFFFFF;
+    return '#${rgb.toRadixString(16).padLeft(6, '0')}';
   }
 }
