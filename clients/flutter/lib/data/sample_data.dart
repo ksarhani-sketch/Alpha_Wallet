@@ -1,5 +1,3 @@
-import 'package:flutter/material.dart';
-
 import 'finance_state.dart';
 import 'models/models.dart';
 
@@ -13,53 +11,53 @@ FinanceState buildSampleState() {
       id: 'cat-food',
       name: 'Food & Dining',
       type: CategoryType.expense,
-      color: Color(0xFFEF6C00),
-      icon: Icons.restaurant,
+      colorHex: '#EF6C00',
+      iconName: 'restaurant',
       isDefault: true,
     ),
     const Category(
       id: 'cat-transport',
       name: 'Transport',
       type: CategoryType.expense,
-      color: Color(0xFF7B1FA2),
-      icon: Icons.directions_bus,
+      colorHex: '#7B1FA2',
+      iconName: 'directions_bus',
       isDefault: true,
     ),
     const Category(
       id: 'cat-rent',
       name: 'Rent',
       type: CategoryType.expense,
-      color: Color(0xFF3949AB),
-      icon: Icons.home_work,
+      colorHex: '#3949AB',
+      iconName: 'home_work',
       isDefault: true,
     ),
     const Category(
       id: 'cat-entertainment',
       name: 'Entertainment',
       type: CategoryType.expense,
-      color: Color(0xFFD81B60),
-      icon: Icons.movie_outlined,
+      colorHex: '#D81B60',
+      iconName: 'movie_outlined',
     ),
     const Category(
       id: 'cat-groceries',
       name: 'Groceries',
       type: CategoryType.expense,
-      color: Color(0xFF00897B),
-      icon: Icons.shopping_basket,
+      colorHex: '#00897B',
+      iconName: 'shopping_basket',
     ),
     const Category(
       id: 'cat-salary',
       name: 'Salary',
       type: CategoryType.income,
-      color: Color(0xFF558B2F),
-      icon: Icons.payments,
+      colorHex: '#558B2F',
+      iconName: 'payments',
     ),
     const Category(
       id: 'cat-freelance',
       name: 'Freelance',
       type: CategoryType.income,
-      color: Color(0xFF455A64),
-      icon: Icons.auto_graph,
+      colorHex: '#455A64',
+      iconName: 'auto_graph',
     ),
   ];
 

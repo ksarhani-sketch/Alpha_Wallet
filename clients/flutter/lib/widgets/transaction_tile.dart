@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/formatters.dart';
 import '../data/models/models.dart';
+import '../ui/category_ui_mapper.dart';
 
 class TransactionTile extends StatelessWidget {
   const TransactionTile({
@@ -20,6 +21,7 @@ class TransactionTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isExpense = transaction.kind == TransactionKind.expense;
+    final uiCategory = UiCategory.fromDomain(category);
     final amountText = formatCurrency(
       isExpense ? -transaction.amount : transaction.amount,
       wallet.currency,
@@ -27,12 +29,12 @@ class TransactionTile extends StatelessWidget {
     return Card(
       child: ListTile(
         leading: CircleAvatar(
-          backgroundColor: category.color.withOpacity(0.12),
-          child: Icon(category.icon, color: category.color),
+          backgroundColor: uiCategory.color.withOpacity(0.12),
+          child: Icon(uiCategory.icon, color: uiCategory.color),
         ),
-        title: Text(transaction.note ?? category.name),
+        title: Text(transaction.note ?? uiCategory.name),
         subtitle: Text(
-          '${category.name} • ${wallet.name} • ${formatShortDate(transaction.timestamp)} ${formatTime(transaction.timestamp)}',
+          '${uiCategory.name} • ${wallet.name} • ${formatShortDate(transaction.timestamp)} ${formatTime(transaction.timestamp)}',
         ),
         trailing: Column(
           mainAxisAlignment: MainAxisAlignment.center,
