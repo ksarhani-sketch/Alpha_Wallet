@@ -3,6 +3,7 @@ import 'dart:math';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart' show debugPrint; // avoids Category clash
+import 'package:flutter/material.dart' show Color, IconData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
@@ -69,6 +70,86 @@ class FinanceController extends StateNotifier<FinanceState> {
       state = state.copyWith(isSyncing: false);
       rethrow;
     }
+  }
+
+  Future<models.Category> createCategory({
+    required String name,
+    required models.CategoryType type,
+    required Color color,
+    required IconData icon,
+    double? budgetLimit,
+    double? alertThreshold,
+    bool rollover = false,
+  }) async {
+    final trimmedName = name.trim();
+    if (trimmedName.length < 2) {
+      throw ArgumentError.value(name, 'name', 'Category name must be at least 2 characters');
+    }
+
+    if (_api.isEnabled) {
+      final created = await _api.createCategory(
+        name: trimmedName,
+        type: type,
+        color: color,
+        icon: icon,
+      );
+
+      if (budgetLimit != null && budgetLimit > 0) {
+        final now = DateTime.now();
+        final month = '${now.year.toString().padLeft(4, '0')}-${now.month.toString().padLeft(2, '0')}';
+        await _api.createBudget(
+          month: month,
+          currency: state.settings.primaryCurrency,
+          limit: budgetLimit,
+          categoryId: created.id,
+          alertThreshold: alertThreshold,
+          rollover: rollover,
+        );
+      }
+
+      await _refreshFromRemote();
+      return state.categories.firstWhere(
+        (category) => category.id == created.id,
+        orElse: () => created,
+      );
+    }
+
+    final category = models.Category(
+      id: _uuid.v4(),
+      name: trimmedName,
+      type: type,
+      color: color,
+      icon: icon,
+      isDefault: false,
+    );
+
+    final categories = [...state.categories, category];
+
+    var budgets = state.budgets.toList();
+    if (budgetLimit != null && budgetLimit > 0) {
+      final now = DateTime.now();
+      final startOfMonth = DateTime(now.year, now.month, 1);
+      final endOfMonth = DateTime(now.year, now.month + 1, 0, 23, 59, 59, 999);
+      final budget = models.Budget(
+        id: 'budget-${category.id}-${now.year}${now.month.toString().padLeft(2, '0')}',
+        currency: state.settings.primaryCurrency,
+        limit: budgetLimit,
+        period: models.BudgetPeriod.monthly,
+        periodStart: startOfMonth,
+        periodEnd: endOfMonth,
+        categoryId: category.id,
+        alertThreshold: alertThreshold ?? 0.9,
+        rollover: rollover,
+      );
+      budgets = [...budgets, budget];
+    }
+
+    state = state.copyWith(
+      categories: categories,
+      budgets: budgets,
+    );
+
+    return category;
   }
 
   Future<void> addTransaction({
