@@ -3,7 +3,6 @@ import 'dart:math';
 
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart' show debugPrint; // avoids Category clash
-import 'package:flutter/material.dart' show Color, IconData;
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:uuid/uuid.dart';
 
@@ -37,6 +36,7 @@ class FinanceController extends StateNotifier<FinanceState> {
           userId: 'pending-auth',
           primaryCurrency: 'USD',
           locale: 'en',
+          syncEnabled: true,
         ),
         fxRates: const {'USD': 1.0},
         lastSyncedAt: DateTime.fromMillisecondsSinceEpoch(0),
@@ -75,8 +75,8 @@ class FinanceController extends StateNotifier<FinanceState> {
   Future<models.Category> createCategory({
     required String name,
     required models.CategoryType type,
-    required Color color,
-    required IconData icon,
+    required String colorHex,
+    required String iconName,
     double? budgetLimit,
     double? alertThreshold,
     bool rollover = false,
@@ -90,8 +90,8 @@ class FinanceController extends StateNotifier<FinanceState> {
       final created = await _api.createCategory(
         name: trimmedName,
         type: type,
-        color: color,
-        icon: icon,
+        colorHex: colorHex,
+        iconName: iconName,
       );
 
       if (budgetLimit != null && budgetLimit > 0) {
@@ -118,8 +118,8 @@ class FinanceController extends StateNotifier<FinanceState> {
       id: _uuid.v4(),
       name: trimmedName,
       type: type,
-      color: color,
-      icon: icon,
+      colorHex: colorHex,
+      iconName: iconName,
       isDefault: false,
     );
 

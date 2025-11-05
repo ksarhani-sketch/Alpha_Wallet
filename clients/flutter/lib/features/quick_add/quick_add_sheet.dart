@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../data/models/models.dart';
 import '../../data/providers.dart';
+import '../../ui/category_ui_mapper.dart';
 import 'new_category_dialog.dart';
 
 class QuickAddSheet extends ConsumerStatefulWidget {
@@ -35,10 +36,14 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
   @override
   Widget build(BuildContext context) {
     final state = ref.watch(financeControllerProvider);
-    final categories = state.categories
+    final domainCategories = state.categories
         .where((category) => category.type == _categoryType)
         .toList(growable: false);
-    _categoryId ??= categories.isNotEmpty ? categories.first.id : null;
+    final uiCategories = [
+      for (final category in domainCategories) UiCategory.fromDomain(category)
+    ];
+    _categoryId ??=
+        domainCategories.isNotEmpty ? domainCategories.first.id : null;
     _walletId ??= state.wallets.isNotEmpty ? state.wallets.first.id : null;
 
     return Padding(
@@ -94,7 +99,7 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
                 const SizedBox(height: 16),
                 Text('Category', style: Theme.of(context).textTheme.labelLarge),
                 const SizedBox(height: 8),
-                if (categories.isEmpty)
+                if (uiCategories.isEmpty)
                   Padding(
                     padding: const EdgeInsets.symmetric(vertical: 12),
                     child: OutlinedButton.icon(
@@ -111,7 +116,7 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
                         spacing: 8,
                         runSpacing: 8,
                         children: [
-                          for (final category in categories)
+                          for (final category in uiCategories)
                             ChoiceChip(
                               label: Text(category.name),
                               avatar: Icon(category.icon, size: 18),
@@ -208,8 +213,8 @@ class _QuickAddSheetState extends ConsumerState<QuickAddSheet> {
       final created = await controller.createCategory(
         name: result.name,
         type: result.type,
-        color: result.color,
-        icon: result.icon,
+        colorHex: result.colorHex,
+        iconName: result.iconName,
         budgetLimit: result.budgetLimit,
         alertThreshold: result.alertThreshold,
         rollover: result.rollover,

@@ -6,8 +6,8 @@ class NewCategoryData {
   const NewCategoryData({
     required this.name,
     required this.type,
-    required this.color,
-    required this.icon,
+    required this.colorHex,
+    required this.iconName,
     this.budgetLimit,
     this.alertThreshold,
     this.rollover = false,
@@ -15,8 +15,8 @@ class NewCategoryData {
 
   final String name;
   final CategoryType type;
-  final Color color;
-  final IconData icon;
+  final String colorHex;
+  final String iconName;
   final double? budgetLimit;
   final double? alertThreshold;
   final bool rollover;
@@ -37,8 +37,8 @@ class _NewCategoryDialogState extends State<NewCategoryDialog> {
   final _limitController = TextEditingController();
 
   late CategoryType _type = widget.initialType;
-  Color _selectedColor = _colorOptions.first;
-  IconData _selectedIcon = _iconOptions.first;
+  _ColorOption _selectedColor = _colorOptions.first;
+  _IconOption _selectedIcon = _iconOptions.first;
   double _alertThreshold = 0.9;
   bool _rollover = false;
 
@@ -95,7 +95,7 @@ class _NewCategoryDialogState extends State<NewCategoryDialog> {
                 children: [
                   for (final icon in _iconOptions)
                     ChoiceChip(
-                      label: Icon(icon),
+                      label: Icon(icon.icon),
                       selected: _selectedIcon == icon,
                       onSelected: (_) => setState(() => _selectedIcon = icon),
                     ),
@@ -111,7 +111,7 @@ class _NewCategoryDialogState extends State<NewCategoryDialog> {
                     GestureDetector(
                       onTap: () => setState(() => _selectedColor = color),
                       child: CircleAvatar(
-                        backgroundColor: color,
+                        backgroundColor: color.color,
                         radius: _selectedColor == color ? 18 : 16,
                         child: _selectedColor == color
                             ? const Icon(Icons.check, color: Colors.white)
@@ -197,8 +197,8 @@ class _NewCategoryDialogState extends State<NewCategoryDialog> {
     Navigator.of(context).pop(NewCategoryData(
       name: name,
       type: _type,
-      color: _selectedColor,
-      icon: _selectedIcon,
+      colorHex: _selectedColor.hex,
+      iconName: _selectedIcon.name,
       budgetLimit: limit,
       alertThreshold: limit == null ? null : _alertThreshold,
       rollover: limit == null ? false : _rollover,
@@ -206,30 +206,52 @@ class _NewCategoryDialogState extends State<NewCategoryDialog> {
   }
 }
 
-const List<IconData> _iconOptions = [
-  Icons.category,
-  Icons.fastfood,
-  Icons.local_grocery_store,
-  Icons.directions_bus,
-  Icons.health_and_safety,
-  Icons.savings,
-  Icons.vaccines,
-  Icons.fitness_center,
-  Icons.work,
-  Icons.coffee,
-  Icons.school,
+class _IconOption {
+  const _IconOption(this.name, this.icon);
+
+  final String name;
+  final IconData icon;
+}
+
+class _ColorOption {
+  const _ColorOption(this.hex, this.color);
+
+  final String hex;
+  final Color color;
+}
+
+const List<_IconOption> _iconOptions = [
+  _IconOption('category', Icons.category),
+  _IconOption('fastfood', Icons.fastfood),
+  _IconOption('local_grocery_store', Icons.local_grocery_store),
+  _IconOption('directions_bus', Icons.directions_bus),
+  _IconOption('health_and_safety', Icons.health_and_safety),
+  _IconOption('savings', Icons.savings),
+  _IconOption('vaccines', Icons.vaccines),
+  _IconOption('fitness_center', Icons.fitness_center),
+  _IconOption('work', Icons.work),
+  _IconOption('coffee', Icons.coffee),
+  _IconOption('school', Icons.school),
+  _IconOption('restaurant', Icons.restaurant),
+  _IconOption('home_work', Icons.home_work),
+  _IconOption('movie_outlined', Icons.movie_outlined),
+  _IconOption('shopping_basket', Icons.shopping_basket),
+  _IconOption('shopping_bag', Icons.shopping_bag),
+  _IconOption('payments', Icons.payments),
+  _IconOption('auto_graph', Icons.auto_graph),
+  _IconOption('restaurant_menu', Icons.restaurant_menu),
 ];
 
-const List<Color> _colorOptions = [
-  Color(0xFFEF6C00),
-  Color(0xFF7B1FA2),
-  Color(0xFF3949AB),
-  Color(0xFFD81B60),
-  Color(0xFF00897B),
-  Color(0xFF558B2F),
-  Color(0xFF455A64),
-  Color(0xFFFFB300),
-  Color(0xFF00ACC1),
-  Color(0xFF5D4037),
-  Color(0xFF1E88E5),
+const List<_ColorOption> _colorOptions = [
+  _ColorOption('#EF6C00', Color(0xFFEF6C00)),
+  _ColorOption('#7B1FA2', Color(0xFF7B1FA2)),
+  _ColorOption('#3949AB', Color(0xFF3949AB)),
+  _ColorOption('#D81B60', Color(0xFFD81B60)),
+  _ColorOption('#00897B', Color(0xFF00897B)),
+  _ColorOption('#558B2F', Color(0xFF558B2F)),
+  _ColorOption('#455A64', Color(0xFF455A64)),
+  _ColorOption('#FFB300', Color(0xFFFFB300)),
+  _ColorOption('#00ACC1', Color(0xFF00ACC1)),
+  _ColorOption('#5D4037', Color(0xFF5D4037)),
+  _ColorOption('#1E88E5', Color(0xFF1E88E5)),
 ];
