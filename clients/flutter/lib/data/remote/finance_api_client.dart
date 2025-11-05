@@ -1,41 +1,19 @@
 import 'dart:convert';
 
+// REMOVE: material imports
+// import 'package:flutter/foundation.dart' show debugPrint;
+// import 'package:flutter/material.dart' show Color, Colors, Icons;
 import 'package:flutter/foundation.dart' show debugPrint;
-import 'package:flutter/material.dart' show Color, Colors, Icons;
 import 'package:http/http.dart' as http;
 
 import '../finance_state.dart';
 import '../models/budget.dart';
 import '../models/category.dart';
 import '../models/transaction_record.dart';
-import '../models/user_settings.dart';
 import '../models/wallet.dart';
 
 // NEW: alias import so we can qualify enums/constants safely.
 import '../models/models.dart' as models;
-
-const Map<String, IconData> _iconRegistry = {
-  'category': Icons.category,
-  'fastfood': Icons.fastfood,
-  'local_grocery_store': Icons.local_grocery_store,
-  'directions_bus': Icons.directions_bus,
-  'health_and_safety': Icons.health_and_safety,
-  'savings': Icons.savings,
-  'vaccines': Icons.vaccines,
-  'fitness_center': Icons.fitness_center,
-  'work': Icons.work,
-  'coffee': Icons.coffee,
-  'school': Icons.school,
-  'restaurant': Icons.restaurant,
-  'home_work': Icons.home_work,
-  'movie': Icons.movie,
-  'movie_outlined': Icons.movie_outlined,
-  'shopping_basket': Icons.shopping_basket,
-  'shopping_bag': Icons.shopping_bag,
-  'payments': Icons.payments,
-  'auto_graph': Icons.auto_graph,
-  'restaurant_menu': Icons.restaurant_menu,
-};
 
 class FinanceApiException implements Exception {
   FinanceApiException(this.statusCode, this.message);
@@ -115,9 +93,7 @@ class FinanceApiClient {
       if (sub is String && sub.trim().isNotEmpty) {
         return sub;
       }
-    } catch (_) {
-      // Ignore decoding errors and fall back to null.
-    }
+    } catch (_) {}
     return null;
   }
 
@@ -141,18 +117,10 @@ class FinanceApiClient {
         response = await _client.get(uri, headers: headers);
         break;
       case 'POST':
-        response = await _client.post(
-          uri,
-          headers: headers,
-          body: body == null ? null : jsonEncode(body),
-        );
+        response = await _client.post(uri, headers: headers, body: body == null ? null : jsonEncode(body));
         break;
       case 'PUT':
-        response = await _client.put(
-          uri,
-          headers: headers,
-          body: body == null ? null : jsonEncode(body),
-        );
+        response = await _client.put(uri, headers: headers, body: body == null ? null : jsonEncode(body));
         break;
       case 'DELETE':
         response = await _client.delete(uri, headers: headers);
@@ -235,7 +203,7 @@ class FinanceApiClient {
   Future<void> createTransaction({
     required String accountId,
     required String categoryId,
-    required String type,
+    required String type, // "income" | "expense"
     required double amount,
     String? note,
     List<String>? tags,
@@ -254,17 +222,18 @@ class FinanceApiClient {
     await _request('DELETE', '/transactions/$txnId');
   }
 
+  /// CLEAN: data-layer takes/returns iconName + colorHex, not UI types.
   Future<Category> createCategory({
     required String name,
     required models.CategoryType type,
-    required Color color,
-    required IconData icon,
+    required String colorHex, // e.g. "#FF9800" (6 or 8 hex)
+    required String iconName, // e.g. "shopping_bag"
   }) async {
     final body = <String, dynamic>{
       'name': name,
       'type': type == models.CategoryType.income ? 'income' : 'expense',
-      'color': _colorToHex(color),
-      'icon': _iconNameFor(icon),
+      'color': _normalizeHex(colorHex),
+      'icon': iconName,
     };
     final response = await _request('POST', '/categories', body: body);
     if (response is Map<String, dynamic>) {
@@ -274,8 +243,8 @@ class FinanceApiClient {
       id: '',
       name: name,
       type: type == models.CategoryType.income ? CategoryType.income : CategoryType.expense,
-      color: color,
-      icon: icon,
+      colorHex: _normalizeHex(colorHex),
+      iconName: iconName,
     );
   }
 
@@ -321,20 +290,26 @@ class FinanceApiClient {
     final type = (json['type'] as String? ?? 'expense').toLowerCase() == 'income'
         ? CategoryType.income
         : CategoryType.expense;
-    final color = _parseColor(json['color'] as String?);
-    final icon = _iconFromName(json['icon'] as String?);
+
+    // NOTE: Do not parse to Color, keep hex string
+    final colorHex = _normalizeHex(json['color'] as String?);
+
+    // NOTE: Keep raw icon name from backend/app
+    final iconName = (json['icon'] as String? ?? 'category').trim().isEmpty
+        ? 'category'
+        : (json['icon'] as String).trim();
+
     return Category(
       id: json['categoryId'] as String? ?? '',
       name: json['name'] as String? ?? 'Category',
       type: type,
-      color: color,
-      icon: icon,
+      colorHex: colorHex,
+      iconName: iconName,
     );
   }
 
   TransactionRecord _mapTransaction(Map<String, dynamic> json) {
     final type = (json['type'] as String? ?? 'expense').toLowerCase();
-    // FIX: qualify the enum
     final kind = type == 'income'
         ? models.TransactionKind.income
         : models.TransactionKind.expense;
@@ -372,41 +347,15 @@ class FinanceApiClient {
     );
   }
 
-  Color _parseColor(String? hex) {
-    if (hex == null || hex.isEmpty) {
-      return Colors.blueGrey;
-    }
-    final cleaned = hex.replaceAll('#', '');
-    final buffer = StringBuffer();
-    if (cleaned.length == 6) {
-      buffer.write('ff');
-    }
-    buffer.write(cleaned);
-    final value = int.tryParse(buffer.toString(), radix: 16);
-    if (value == null) {
-      return Colors.blueGrey;
-    }
-    return Color(value);
-  }
+  // ---------- helpers (pure) ----------
 
-  String _iconNameFor(IconData icon) {
-    for (final entry in _iconRegistry.entries) {
-      if (entry.value == icon) {
-        return entry.key;
-      }
-    }
-    return 'category';
-  }
-
-  IconData _iconFromName(String? name) {
-    if (name == null || name.isEmpty) {
-      return Icons.category;
-    }
-    return _iconRegistry[name] ?? Icons.category;
-  }
-
-  String _colorToHex(Color color) {
-    final rgb = color.value & 0x00FFFFFF;
-    return '#${rgb.toRadixString(16).padLeft(6, '0')}';
+  String _normalizeHex(String? hex) {
+    final raw = (hex ?? '').replaceAll('#', '').trim();
+    if (raw.isEmpty) return '#607D8B'; // blueGrey fallback
+    // If 6-digit, add opaque alpha
+    final normalized = raw.length == 6 ? 'FF$raw' : raw;
+    final upper = normalized.toUpperCase();
+    final valid = RegExp(r'^[0-9A-F]{8}$').hasMatch(upper);
+    return '#${valid ? upper.substring(2) : '607D8B'}'; // return as #RRGGBB
   }
 }
