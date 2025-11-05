@@ -2,6 +2,7 @@ import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
 import '../data/models/category.dart';
+import '../ui/category_ui_mapper.dart';
 
 class CategoryPieChart extends StatelessWidget {
   const CategoryPieChart({super.key, required this.data});
@@ -22,7 +23,7 @@ class CategoryPieChart extends StatelessWidget {
         sections: [
           for (final entry in data.entries)
             PieChartSectionData(
-              color: entry.key.color,
+              color: UiCategory.fromDomain(entry.key).color,
               value: entry.value,
               title: '${(entry.value / total * 100).round()}%',
               titleStyle: textStyle?.copyWith(color: Colors.white),

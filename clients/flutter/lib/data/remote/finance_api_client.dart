@@ -10,6 +10,7 @@ import '../finance_state.dart';
 import '../models/budget.dart';
 import '../models/category.dart';
 import '../models/transaction_record.dart';
+import '../models/user_settings.dart';
 import '../models/wallet.dart';
 
 // NEW: alias import so we can qualify enums/constants safely.

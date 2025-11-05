@@ -1,68 +1,59 @@
-import 'dart:collection';
+import 'models/budget.dart';
+import 'models/category.dart';
+import 'models/recurring_transaction.dart';
+import 'models/transaction_record.dart';
+import 'models/user_settings.dart';
+import 'models/wallet.dart';
 
-import 'models/models.dart';
-
+/// Domain-level finance state shared between the data layer and UI.
 class FinanceState {
-  FinanceState({
-    Iterable<Category>? categories,
-    Iterable<Wallet>? wallets,
-    Iterable<TransactionRecord>? transactions,
-    Iterable<Budget>? budgets,
-    Iterable<RecurringTemplate>? recurringTemplates,
-    UserSettings? settings,
-    Map<String, double>? fxRates,
-    DateTime? lastSyncedAt,
-    this.isSyncing = false,
-  })  : _categories = List<Category>.unmodifiable(categories ?? const []),
-        _wallets = List<Wallet>.unmodifiable(wallets ?? const []),
-        _transactions = List<TransactionRecord>.unmodifiable(transactions ?? const []),
-        _budgets = List<Budget>.unmodifiable(budgets ?? const []),
-        _recurringTemplates =
-            List<RecurringTemplate>.unmodifiable(recurringTemplates ?? const []),
-        settings = settings ??
-            const UserSettings(
-              userId: 'local-sample-user',
-              primaryCurrency: 'USD',
-              locale: 'en',
-            ),
-        fxRates = Map.unmodifiable(fxRates ?? const {'USD': 1.0}),
-        lastSyncedAt = lastSyncedAt ?? DateTime.now().subtract(const Duration(minutes: 15));
-
-  final List<Category> _categories;
-  final List<Wallet> _wallets;
-  final List<TransactionRecord> _transactions;
-  final List<Budget> _budgets;
-  final List<RecurringTemplate> _recurringTemplates;
-  final Map<String, double> fxRates;
+  final List<Category> categories;
+  final List<Wallet> wallets;
+  final List<TransactionRecord> transactions;
+  final List<Budget> budgets;
+  final List<RecurringTemplate> recurringTemplates;
   final UserSettings settings;
+  final Map<String, double> fxRates;
   final DateTime lastSyncedAt;
   final bool isSyncing;
 
-  UnmodifiableListView<Category> get categories => UnmodifiableListView(_categories);
-  UnmodifiableListView<Wallet> get wallets => UnmodifiableListView(_wallets);
-  UnmodifiableListView<TransactionRecord> get transactions =>
-      UnmodifiableListView(_transactions);
-  UnmodifiableListView<Budget> get budgets => UnmodifiableListView(_budgets);
-  UnmodifiableListView<RecurringTemplate> get recurringTemplates =>
-      UnmodifiableListView(_recurringTemplates);
+  const FinanceState({
+    this.categories = const [],
+    this.wallets = const [],
+    this.transactions = const [],
+    this.budgets = const [],
+    this.recurringTemplates = const [],
+    UserSettings? settings,
+    this.fxRates = const {},
+    DateTime? lastSyncedAt,
+    this.isSyncing = false,
+  })  : settings = settings ??
+            const UserSettings(
+              userId: 'demo-user',
+              primaryCurrency: 'USD',
+              locale: 'en',
+              syncEnabled: true,
+            ),
+        lastSyncedAt =
+            lastSyncedAt ?? DateTime.fromMillisecondsSinceEpoch(0);
 
   FinanceState copyWith({
-    Iterable<Category>? categories,
-    Iterable<Wallet>? wallets,
-    Iterable<TransactionRecord>? transactions,
-    Iterable<Budget>? budgets,
-    Iterable<RecurringTemplate>? recurringTemplates,
+    List<Category>? categories,
+    List<Wallet>? wallets,
+    List<TransactionRecord>? transactions,
+    List<Budget>? budgets,
+    List<RecurringTemplate>? recurringTemplates,
     UserSettings? settings,
     Map<String, double>? fxRates,
     DateTime? lastSyncedAt,
     bool? isSyncing,
   }) {
     return FinanceState(
-      categories: categories ?? _categories,
-      wallets: wallets ?? _wallets,
-      transactions: transactions ?? _transactions,
-      budgets: budgets ?? _budgets,
-      recurringTemplates: recurringTemplates ?? _recurringTemplates,
+      categories: categories ?? this.categories,
+      wallets: wallets ?? this.wallets,
+      transactions: transactions ?? this.transactions,
+      budgets: budgets ?? this.budgets,
+      recurringTemplates: recurringTemplates ?? this.recurringTemplates,
       settings: settings ?? this.settings,
       fxRates: fxRates ?? this.fxRates,
       lastSyncedAt: lastSyncedAt ?? this.lastSyncedAt,

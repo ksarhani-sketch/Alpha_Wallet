@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../core/formatters.dart';
 import '../data/models/category.dart';
+import '../ui/category_ui_mapper.dart';
 
 class CategoryLegend extends StatelessWidget {
   const CategoryLegend({super.key, required this.data, required this.currency});
@@ -39,9 +40,10 @@ class _LegendItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final uiCategory = UiCategory.fromDomain(category);
     return Chip(
-      avatar: CircleAvatar(backgroundColor: category.color),
-      label: Text('${category.name} · ${formatCurrency(amount, currency)}'),
+      avatar: CircleAvatar(backgroundColor: uiCategory.color),
+      label: Text('${uiCategory.name} · ${formatCurrency(amount, currency)}'),
     );
   }
 }
