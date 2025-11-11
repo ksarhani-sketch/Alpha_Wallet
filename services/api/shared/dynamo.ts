@@ -7,5 +7,6 @@ export const env = {
   accTable: process.env.TABLE_ACCOUNTS!,
   catTable: process.env.TABLE_CATEGORIES!,
   budTable: process.env.TABLE_BUDGETS!,
+  userTable: process.env.TABLE_USERS!,
   bucket: process.env.BUCKET_ATTACHMENTS!,
 };

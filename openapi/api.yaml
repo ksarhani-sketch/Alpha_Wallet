@@ -8,6 +8,11 @@ servers:
       host:
         default: api.example.com
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
   schemas:
     Error:
       type: object
@@ -127,7 +132,133 @@ components:
           type: string
           format: date-time
       required: [month, currency, limit]
+    SignedToken:
+      type: object
+      properties:
+        token:
+          type: string
+        expiresAt:
+          type: string
+          format: date-time
+          nullable: true
+      required: [token]
+    TokenPair:
+      type: object
+      properties:
+        accessToken:
+          $ref: '#/components/schemas/SignedToken'
+        refreshToken:
+          $ref: '#/components/schemas/SignedToken'
+      required: [accessToken, refreshToken]
+    AuthenticatedUser:
+      type: object
+      properties:
+        user:
+          type: object
+          properties:
+            userId:
+              type: string
+            email:
+              type: string
+              format: email
+            displayName:
+              type: string
+              nullable: true
+            createdAt:
+              type: string
+              format: date-time
+            updatedAt:
+              type: string
+              format: date-time
+            lastLoginAt:
+              type: string
+              format: date-time
+              nullable: true
+          required: [userId, email, createdAt, updatedAt]
+        tokens:
+          $ref: '#/components/schemas/TokenPair'
+      required: [user, tokens]
+security:
+  - BearerAuth: []
 paths:
+  /auth/register:
+    post:
+      summary: Register a new user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+                  minLength: 8
+                displayName:
+                  type: string
+      responses:
+        '201':
+          description: Account created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedUser'
+        '400': { description: Validation error }
+        '409': { description: Email already exists }
+  /auth/login:
+    post:
+      summary: Authenticate an existing user
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [email, password]
+              properties:
+                email:
+                  type: string
+                  format: email
+                password:
+                  type: string
+                  format: password
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedUser'
+        '401': { description: Invalid credentials }
+  /auth/refresh:
+    post:
+      summary: Refresh access token
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [refreshToken]
+              properties:
+                refreshToken:
+                  type: string
+      responses:
+        '200':
+          description: A new token pair
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthenticatedUser'
+        '401': { description: Invalid refresh token }
   /accounts:
     get:
       summary: List accounts
